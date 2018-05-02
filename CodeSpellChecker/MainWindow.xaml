@@ -1,0 +1,89 @@
+<Window x:Class="CodeSpellChecker.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:CodeSpellChecker"
+        mc:Ignorable="d"
+        Title="Code Spell Checker" Height="450" Width="800">
+    <Window.Resources>
+        <ResourceDictionary>
+            <BooleanToVisibilityConverter x:Key="BoolToVis" />
+        </ResourceDictionary>
+    </Window.Resources>
+
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <Grid Grid.Row="0"
+              Margin="0,0,0,10">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <Label Grid.Row="0" Grid.Column="0"
+                   Content="Source File Directory"/>
+            <TextBox Grid.Row="0" Grid.Column="1"
+                     Margin="5,0" Text="{Binding SourceFilePath}"/>
+            <Button Grid.Row="0" 
+                    Grid.Column="2" 
+                    Padding="5,2"
+                    Content="Start" 
+                    Command="{Binding StartCommand}"/>
+            
+        </Grid>
+        <Grid Grid.Row="1" Margin="0,5,0,0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <Grid Grid.Row="0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Label 
+                    Grid.Column="0"
+                    Content="Unknown Words:"/>
+                <CheckBox Grid.Column="1"
+                          HorizontalAlignment="Right"
+                    Margin="5,5,0,0"
+                    IsChecked="{Binding ShowFileDetails}"
+                    Content="Show File &amp; Line Details"/>
+            </Grid>
+            
+            <TextBox Grid.Row="1" VerticalScrollBarVisibility="Auto"
+                 IsReadOnly="True"
+                 TextWrapping="Wrap"
+                 Text="{Binding Words}"/>
+            </Grid>
+        <Grid Grid.Row="2" Margin="0,5,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" MinWidth="70"
+                       Text="{Binding Status}"/>
+            <ProgressBar Grid.Column="1"
+                         Minimum="0"
+                         Value="{Binding Progress}"
+                         Visibility="{Binding IsProgressVisible, Converter={StaticResource BoolToVis}}"
+                         Name="PbStatus"
+                         Maximum="100"/>
+            <TextBlock Grid.Column="1" 
+                       Text="{Binding ElementName=PbStatus, Path=Value, StringFormat={}{0:0.0}%}" 
+                       Visibility="{Binding IsProgressVisible, Converter={StaticResource BoolToVis}}"
+                       HorizontalAlignment="Center" 
+                       VerticalAlignment="Center" />
+        </Grid>
+    </Grid>
+</Window>

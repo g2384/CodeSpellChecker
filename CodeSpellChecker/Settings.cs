@@ -1,0 +1,41 @@
+using System.Collections.Generic;
+
+namespace CodeSpellChecker
+{
+    public class Settings
+    {
+        public string SourceFilePath { get; set; }
+
+        public List<string> ExcludeFolders { get; set; }
+
+        public List<string> FileExtensions { get; set; }
+
+        public bool ShowFileDetails { get; set; }
+
+        public int IgnoreIfLengthLessThan { get; set; }
+
+        public List<string> IgnoredContents { get; set; }
+
+        public void Init()
+        {
+            IgnoreIfLengthLessThan = 3;
+
+            IgnoredContents = new List<string>()
+            {
+                @"Guid\(""[0-9a-zA-Z\-]+""\)",
+                @"&[a-zA-Z]+;",
+                @"///   Looks up a localized string similar to.*"
+            };
+
+            FileExtensions = new List<string>()
+            {
+                ".cs"
+            };
+
+            ExcludeFolders = new List<string>()
+            {
+                @"\obj\", @"\bin\"
+            };
+        }
+    }
+}
