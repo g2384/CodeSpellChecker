@@ -18,8 +18,7 @@
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <Grid Grid.Row="0"
-              Margin="0,0,0,10">
+        <Grid Grid.Row="0">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
@@ -54,6 +53,7 @@
             <StackPanel Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="3"
                         Margin="0,5,0,0"
                         Orientation="Horizontal">
+                <Label Content="If dictionary is modified"></Label>
                 <Button 
                         Padding="5,2"
                         Content="Update Dictionaries"
@@ -63,12 +63,12 @@
         <Grid Grid.Row="1" Margin="0,5,0,0">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
-                <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
             <Grid Grid.Row="0">
                 <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
@@ -76,9 +76,9 @@
                     Grid.Column="0"
                     Content="Unknown Words:"/>
                 <Label 
-                    Grid.Column="0"
+                    Grid.Column="1"
                     Content="{Binding UnknownWordsStat}"/>
-                <CheckBox Grid.Column="1"
+                <CheckBox Grid.Column="2"
                           HorizontalAlignment="Right"
                     Margin="5,5,0,0"
                     IsChecked="{Binding ShowFileDetails}"

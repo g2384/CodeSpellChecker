@@ -210,6 +210,7 @@ namespace CodeSpellChecker
         {
             Progress = 0;
             _totalFiles = 0;
+            UnknownWordsStat = "";
             Status = "Starting...";
             if (!Directory.Exists(SourceFilePath))
             {
