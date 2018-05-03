@@ -56,6 +56,16 @@ namespace CodeSpellChecker
         public RelayCommand<WordInfo> AddToStandardDictionaryCommand =>
             _addToStandardDictionaryCommand ?? (_addToStandardDictionaryCommand = new RelayCommand<WordInfo>(AddToStandardDictionary));
 
+        private RelayCommand<WordInfo> _addToProgrammingDictionaryCommand;
+
+        public RelayCommand<WordInfo> AddToProgrammingDictionaryCommand =>
+            _addToProgrammingDictionaryCommand ?? (_addToProgrammingDictionaryCommand = new RelayCommand<WordInfo>(AddToProgrammingDictionary));
+
+        private void AddToProgrammingDictionary(WordInfo wordInfo)
+        {
+            AddWordToDictionary(wordInfo, ProgrammingDictionaryFile);
+        }
+
         private void AddToStandardDictionary(WordInfo wordInfo)
         {
             AddWordToDictionary(wordInfo, DictionaryFile);
@@ -250,6 +260,7 @@ namespace CodeSpellChecker
                 catch (Exception e)
                 {
                     MessageBox.Show(e.Message, "Error", MessageBoxButton.OK);
+                    Status = "Error occurred";
                 }
                 finally
                 {
@@ -421,7 +432,7 @@ namespace CodeSpellChecker
         {
             Status = "Preparing results for displaying";
             var orderedWords = UnknownWordsDictionary.Keys.OrderBy(i => i).ToArray();
-            WordsTable = new ObservableCollection<WordInfo>(); ;
+            var words = new List<WordInfo>();
 
             if (ShowFileDetails)
             {
@@ -429,17 +440,18 @@ namespace CodeSpellChecker
                 {
                     var word = orderedWords[i];
                     orderedWords[i] += "\n    " + string.Join("\n    ", UnknownWordsDictionary[word]) + "\n";
-                    WordsTable.Add(new WordInfo(word, UnknownWordsDictionary[word]));
+                    words.Add(new WordInfo(word, UnknownWordsDictionary[word]));
                 }
             }
             else
             {
                 foreach (var word in orderedWords)
                 {
-                    WordsTable.Add(new WordInfo(word));
+                    words.Add(new WordInfo(word));
                 }
             }
 
+            WordsTable = new ObservableCollection<WordInfo>(words);
             Words = string.Join("\n", orderedWords);
             UnknownWordsStat = orderedWords.Length + " words";
             Status = "Completed";

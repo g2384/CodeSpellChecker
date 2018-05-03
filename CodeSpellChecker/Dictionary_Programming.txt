@@ -72,3 +72,17 @@ becomes
 api
 aspx
 telerik
+pixels
+pos
+ranorex
+reg
+rgb
+sdk
+seealso
+serializer
+serialize
+serializing
+sizeof
+src
+stackoverflow
+struct

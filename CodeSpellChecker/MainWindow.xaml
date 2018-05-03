@@ -78,7 +78,8 @@
                 </Grid.ColumnDefinitions>
                 <Label 
                     Grid.Column="0"
-                    Content="Unknown Words:"/>
+                    Content="Unknown Words (?):"
+                    ToolTip="All words are converted to lowercase"/>
                 <Label 
                     Grid.Column="1"
                     Content="{Binding UnknownWordsStat}"/>
@@ -143,10 +144,18 @@
                                         Padding="5,2"
                                         Margin="0,5,5,5"
                                         MinWidth="25"
-                                    ToolTip="Add to dictionary"
-                                    Content="S"
-                                    Command="{Binding Path=DataContext.AddToStandardDictionaryCommand, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type DataGrid}}}"
-                                    CommandParameter="{Binding SelectedItem, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type DataGrid}}}"/>
+                                        ToolTip="Add to dictionary"
+                                        Content="S"
+                                        Command="{Binding Path=DataContext.AddToStandardDictionaryCommand, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type DataGrid}}}"
+                                        CommandParameter="{Binding SelectedItem, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type DataGrid}}}"/>
+                                    <Button 
+                                        Padding="5,2"
+                                        Margin="0,5,5,5"
+                                        MinWidth="25"
+                                        ToolTip="Add to programming dictionary"
+                                        Content="P"
+                                        Command="{Binding Path=DataContext.AddToProgrammingDictionaryCommand, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type DataGrid}}}"
+                                        CommandParameter="{Binding SelectedItem, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type DataGrid}}}"/>
                                 </StackPanel>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
