@@ -87,6 +87,12 @@ namespace CodeSpellChecker
             WordsTable.Remove(wordInfo);
             UnknownWordsDictionary.TryRemove(wordInfo.Word, out _);
             Status = wordInfo.Word + " is added to " + dictionaryFileName;
+            UnknownWordsStat = GetUnknownWordsStat();
+        }
+
+        private string GetUnknownWordsStat()
+        {
+            return WordsTable.Count + " words";
         }
 
         public const string FormattedDictionaryFileName = "~Dictionary{0}.txt";
@@ -111,7 +117,7 @@ namespace CodeSpellChecker
             }
             foreach (var g in groups)
             {
-                File.WriteAllLines(DictionaryFolder + "\\" + string.Format(FormattedDictionaryFileName, g.Key), g.ToArray());
+                File.WriteAllLines(DictionaryFolder + "\\" + string.Format(FormattedDictionaryFileName, g.Key), g.OrderBy(i => i).ToArray());
             }
 
             Status = "Dictionary is updated";
@@ -221,6 +227,7 @@ namespace CodeSpellChecker
             {
                 if (Set(ref _showTextBox, value))
                 {
+                    RunAsyncTask(DisplayWords);
                     RaisePropertyChanged(nameof(ShowDataGrid));
                 }
             }
@@ -292,7 +299,7 @@ namespace CodeSpellChecker
             }
         }
 
-        public Dictionary<int, string[]> LookUpDictionary;
+        public Dictionary<int, List<string>> LookUpDictionary;
 
         private void Analyse()
         {
@@ -331,12 +338,12 @@ namespace CodeSpellChecker
                 return;
             }
 
-            LookUpDictionary = new Dictionary<int, string[]>();
+            LookUpDictionary = new Dictionary<int, List<string>>();
             foreach (var d in dictionaries)
             {
                 var length = dictionaryFileNameRegex.Match(d).Groups[1].Value;
                 int lengthNumber = int.Parse(length);
-                LookUpDictionary[lengthNumber] = File.ReadAllLines(d).ToArray();
+                LookUpDictionary[lengthNumber] = File.ReadAllLines(d).ToList();
             }
 
             var path = SourceFilePath;
@@ -382,7 +389,7 @@ namespace CodeSpellChecker
             DisplayWords();
         }
 
-        private void CheckLine(string file, string line, Dictionary<int, string[]> dictionary, List<Regex> regexes)
+        private void CheckLine(string file, string line, Dictionary<int, List<string>> dictionary, List<Regex> regexes)
         {
             var trimmedLine = line.Trim();
             var onlyWords = trimmedLine.Replace("_", " ");
@@ -394,7 +401,7 @@ namespace CodeSpellChecker
             CheckWord(file, dictionary, trimmedLine, words);
         }
 
-        private void CheckWord(string file, Dictionary<int, string[]> dictionary, string trimmedLine, string[] words)
+        private void CheckWord(string file, Dictionary<int, List<string>> dictionary, string trimmedLine, string[] words)
         {
             foreach (var word in words)
             {
@@ -421,7 +428,7 @@ namespace CodeSpellChecker
                     }
 
                     if (!dictionary.ContainsKey(lowerWord.Length)
-                        || !dictionary[lowerWord.Length].Contains(lowerWord))
+                        || dictionary[lowerWord.Length].BinarySearch(lowerWord) < 0)
                     {
                         var suggestions = GetSuggestion(lowerWord);
                         UnknownWordsDictionary[lowerWord] = new List<WordLocation>()
@@ -485,44 +492,34 @@ namespace CodeSpellChecker
             {
                 foreach (var word in orderedWords)
                 {
-                    words.Add(new WordInfo(word));
+                    words.Add(new WordInfo(word, UnknownWordsDictionary[word][0].Suggestions));
                 }
             }
 
             WordsTable = new ObservableCollection<WordInfo>(words);
             Words = string.Join("\n", orderedWords);
-            UnknownWordsStat = orderedWords.Length + " words";
+            UnknownWordsStat = GetUnknownWordsStat();
             Status = "Completed";
         }
 
         private string GetSuggestion(string word)
         {
-            var s1 = GetSuggestion(word, word.Length - 1, out int distance);
-            var s2 = GetSuggestion(word, word.Length, out int distance2);
-            var s3 = GetSuggestion(word, word.Length + 1, out int distance3);
-            var dist = Math.Min(distance, Math.Min(distance2, distance3));
+            if(word.Length <= 3)
+            {
+                return null;
+            }
+
+            var minEditDistance = Math.Min(3, word.Length / 3);
             var suggestions = new List<string>();
-            if (dist == distance)
-            {
-                suggestions.Add(s1);
-            }
-            if (dist == distance2)
-            {
-                suggestions.Add(s2);
-            }
-            if (dist == distance3)
-            {
-                suggestions.Add(s3);
-            }
-            suggestions.RemoveAll(string.IsNullOrWhiteSpace);
-            return string.Join(", ", suggestions);
+            GetSuggestion(word, word.Length - 1, ref minEditDistance, ref suggestions);
+            GetSuggestion(word, word.Length, ref minEditDistance, ref suggestions);
+            GetSuggestion(word, word.Length + 1, ref minEditDistance, ref suggestions);
+            return string.Join("\n", suggestions);
         }
 
-        private string GetSuggestion(string word, int length, out int minEditDistance)
+        private void GetSuggestion(string word, int length, ref int minEditDistance, ref List<string> suggestions)
         {
             var dictionary = LookUpDictionary[length];
-            minEditDistance = Math.Min(3, word.Length / 3);
-            List<string> suggestions = new List<string>();
             foreach (var p in dictionary)
             {
                 var distance = LevenshteinDistance.Compute(p, word);
@@ -536,8 +533,6 @@ namespace CodeSpellChecker
                     suggestions.Add(p);
                 }
             }
-
-            return string.Join(", ", suggestions);
         }
 
         private string[] SplitCamelCase(string word)

@@ -137,7 +137,7 @@
                                         Binding="{Binding Location}"/>
                     <DataGridTextColumn Header="Suggestions" 
                                         Width="Auto" 
-                                        Binding="{Binding Suggestion}"/>
+                                        Binding="{Binding Suggestions}"/>
                     <!--Visibility="{Binding DataContext.ShowFileDetails, Source={StaticResource ProxyElement}, Converter={StaticResource BoolToVis}}"-->
                     <DataGridTemplateColumn Header="Add To Dictionary" Width="Auto">
                         <DataGridTemplateColumn.CellTemplate>
