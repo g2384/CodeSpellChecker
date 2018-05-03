@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
@@ -14,7 +15,6 @@ using Newtonsoft.Json;
 
 namespace CodeSpellChecker
 {
-    //TODO config extensions
     public class MainWindowViewModel : ViewModelBase
     {
         public const string SettingFile = "settings.json";
@@ -39,6 +39,32 @@ namespace CodeSpellChecker
 
         public RelayCommand StartCommand =>
             _startCommand ?? (_startCommand = new RelayCommand(AnalyseAsync, () => _isStartButtonEnabled && !string.IsNullOrWhiteSpace(SourceFilePath)));
+
+        private RelayCommand _prepareDictionaries;
+
+        public RelayCommand PrepareDictionaries =>
+            _prepareDictionaries ?? (_prepareDictionaries = new RelayCommand(PrepareDictionariesCommand));
+
+        public const string FormattedDictionaryFileName = "~Dictionary{0}.txt";
+
+        private void PrepareDictionariesCommand()
+        {
+            var entries = File.ReadAllLines(DictionaryFile).ToList();
+            if (File.Exists(CustomDictionaryFile))
+            {
+                entries.AddRange(File.ReadAllLines(CustomDictionaryFile));
+            }
+            if (File.Exists(ProgrammingDictionaryFile))
+            {
+                entries.AddRange(File.ReadAllLines(ProgrammingDictionaryFile));
+            }
+            entries = entries.ConvertAll(d => d.Trim().ToLower());
+            var groups = entries.GroupBy(i => i.Length);
+            foreach (var g in groups)
+            {
+                File.WriteAllLines(string.Format(FormattedDictionaryFileName, g.Key), g.ToArray());
+            }
+        }
 
         private string _sourceFilePath;
 
@@ -92,8 +118,26 @@ namespace CodeSpellChecker
             set => Set(ref _progress, value);
         }
 
+        private string _fileExtensions;
+
+        public string FileExtensions
+        {
+            get => _fileExtensions ?? (_fileExtensions = string.Join("; ", Settings.FileExtensions));
+            set => Set(ref _fileExtensions, value);
+        }
+
+        private string _excludeFolders;
+
+        public string ExcludeFolders
+        {
+            get => _excludeFolders ?? (_excludeFolders = "\"" + string.Join("\"; \"", Settings.ExcludeFolders) + "\"");
+            set => Set(ref _excludeFolders, value);
+        }
+
 
         public const string CustomDictionaryFile = "Dictionary_Custom.txt";
+
+        public const string ProgrammingDictionaryFile = "Dictionary_Programming.txt";
 
         public const string DictionaryFile = "Dictionary.txt";
 
@@ -107,6 +151,14 @@ namespace CodeSpellChecker
         {
             get => _isProgressVisible;
             set => Set(ref _isProgressVisible, value);
+        }
+
+        private string _unknownWordsStat;
+
+        public string UnknownWordsStat
+        {
+            get => _unknownWordsStat;
+            set => Set(ref _unknownWordsStat, value);
         }
 
         private void ChangeStartCommandCanExecute(bool isStartButtonEnabled)
@@ -135,7 +187,7 @@ namespace CodeSpellChecker
                 {
                     ChangeStartCommandCanExecute(false);
                     IsProgressVisible = true;
-                    Stopwatch sp = new Stopwatch();
+                    var sp = new Stopwatch();
                     sp.Start();
                     Analyse();
                     sp.Stop();
@@ -159,23 +211,43 @@ namespace CodeSpellChecker
             Progress = 0;
             _totalFiles = 0;
             Status = "Starting...";
-            Settings.SourceFilePath = SourceFilePath;
-            Settings.ShowFileDetails = ShowFileDetails;
             if (!Directory.Exists(SourceFilePath))
             {
                 MessageBox.Show($"Wrong directory \"{SourceFilePath}\"", "Error", MessageBoxButton.OK);
                 return;
             }
 
-            File.WriteAllText(SettingFile, JsonConvert.SerializeObject(Settings, Formatting.Indented));
+            StoreSettings();
 
-            var dictionary = File.ReadAllLines(DictionaryFile).ToList();
-            if (File.Exists(CustomDictionaryFile))
+            var currentFolder = Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
+            if (string.IsNullOrWhiteSpace(currentFolder))
             {
-                dictionary.AddRange(File.ReadAllLines(CustomDictionaryFile));
+                MessageBox.Show("Cannot get current folder path", "Error", MessageBoxButton.OK);
+                return;
             }
 
-            dictionary = dictionary.ConvertAll(d => d.Trim().ToLower());
+            var dictionaryFileNameRegex = new Regex(string.Format(FormattedDictionaryFileName, "([0-9]+)"));
+            var dictionaries = GetFormattedDictionaries(currentFolder, dictionaryFileNameRegex);
+            if (!dictionaries.Any())
+            {
+                PrepareDictionariesCommand();
+                dictionaries = GetFormattedDictionaries(currentFolder, dictionaryFileNameRegex);
+            }
+
+            if (!dictionaries.Any())
+            {
+                MessageBox.Show("Cannot load dictionaries files", "Error", MessageBoxButton.OK);
+                return;
+            }
+
+            var dictionary = new Dictionary<int, string[]>();
+            foreach (var d in dictionaries)
+            {
+                var length = dictionaryFileNameRegex.Match(d).Groups[1].Value;
+                int lengthNumber = int.Parse(length);
+                dictionary[lengthNumber] = File.ReadAllLines(d).ToArray();
+            }
+
             var path = SourceFilePath;
             if (!path.EndsWith("\\"))
             {
@@ -201,43 +273,13 @@ namespace CodeSpellChecker
                 var lines = File.ReadAllLines(file);
                 Parallel.ForEach(lines, line =>
                 {
-                    var trimmedLine = line.Trim();
-                    var onlyWords = trimmedLine.Replace("_", " ");
-                    regexes.ForEach(i => i.Replace(onlyWords, ""));
-                    var words = Regex.Matches(onlyWords, @"(\w+)")
-                        .OfType<Match>()
-                        .Select(m => m.Value)
-                        .ToArray();
-                    foreach (var word in words)
+                    try
                     {
-                        // may contain camel cases
-                        var englishWord = new Regex("[^a-zA-Z]+").Replace(word, "");
-                        if (englishWord.Length < Settings.IgnoreIfLengthLessThan)
-                        {
-                            continue;
-                        }
-
-                        var singleWords = SplitCamelCase(englishWord);
-                        foreach (var singleWord in singleWords)
-                        {
-                            if (singleWord.Length < Settings.IgnoreIfLengthLessThan)
-                            {
-                                continue;
-                            }
-
-                            var lowerWord = singleWord.ToLower();
-                            if (UnknownWordsDictionary.ContainsKey(lowerWord))
-                            {
-                                UnknownWordsDictionary[lowerWord].Add(new WordLocation(file, trimmedLine));
-                                continue;
-                            }
-
-                            if (!dictionary.Contains(lowerWord))
-                            {
-                                UnknownWordsDictionary[lowerWord] = new List<WordLocation>()
-                                    {new WordLocation(file, trimmedLine)};
-                            }
-                        }
+                        CheckLine(file, line, dictionary, regexes);
+                    }
+                    catch (Exception e)
+                    {
+                        MessageBox.Show(e.Message, "Error", MessageBoxButton.OK);
                     }
                 });
 
@@ -249,19 +291,93 @@ namespace CodeSpellChecker
             DisplayWords();
         }
 
+        private void CheckLine(string file, string line, Dictionary<int, string[]> dictionary, List<Regex> regexes)
+        {
+            var trimmedLine = line.Trim();
+            var onlyWords = trimmedLine.Replace("_", " ");
+            regexes.ForEach(i => onlyWords = i.Replace(onlyWords, ""));
+            var words = Regex.Matches(onlyWords, @"(\w+)")
+                .OfType<Match>()
+                .Select(m => m.Value)
+                .ToArray();
+            CheckWord(file, dictionary, trimmedLine, words);
+        }
+
+        private void CheckWord(string file, Dictionary<int, string[]> dictionary, string trimmedLine, string[] words)
+        {
+            foreach (var word in words)
+            {
+                // may contain camel cases
+                var englishWord = new Regex("[^a-zA-Z]+").Replace(word, "");
+                if (englishWord.Length < Settings.IgnoreIfLengthLessThan)
+                {
+                    continue;
+                }
+
+                var singleWords = SplitCamelCase(englishWord);
+                foreach (var singleWord in singleWords)
+                {
+                    if (singleWord.Length < Settings.IgnoreIfLengthLessThan)
+                    {
+                        continue;
+                    }
+
+                    var lowerWord = singleWord.ToLower();
+                    if (UnknownWordsDictionary.ContainsKey(lowerWord))
+                    {
+                        UnknownWordsDictionary[lowerWord].Add(new WordLocation(file, trimmedLine));
+                        continue;
+                    }
+
+                    if (!dictionary.ContainsKey(lowerWord.Length)
+                        || !dictionary[lowerWord.Length].Contains(lowerWord))
+                    {
+                        UnknownWordsDictionary[lowerWord] = new List<WordLocation>()
+                                    {new WordLocation(file, trimmedLine)};
+                    }
+                }
+            }
+        }
+
+        private void StoreSettings()
+        {
+            Settings.SourceFilePath = SourceFilePath;
+            Settings.ShowFileDetails = ShowFileDetails;
+            if (!string.IsNullOrWhiteSpace(ExcludeFolders))
+            {
+                var extensions = ExcludeFolders.Substring(1, ExcludeFolders.Length - 2);
+                Settings.ExcludeFolders = new Regex(@""";\s+""").Split(extensions).Where(i => !string.IsNullOrWhiteSpace(i)).ToList();
+            }
+
+            if (!string.IsNullOrWhiteSpace(FileExtensions))
+            {
+                Settings.FileExtensions = new Regex(@"[^\*\.\w]+").Split(FileExtensions).Where(i => !string.IsNullOrWhiteSpace(i)).ToList();
+            }
+
+            File.WriteAllText(SettingFile, JsonConvert.SerializeObject(Settings, Formatting.Indented));
+        }
+
+        private static List<string> GetFormattedDictionaries(string currentFolder, Regex dictionaryFileNameRegex)
+        {
+            var allFilesInCurrentFolder = Directory.GetFiles(currentFolder);
+            var dictionaries = allFilesInCurrentFolder.Where(i => dictionaryFileNameRegex.Match(i).Success);
+            return dictionaries.ToList();
+        }
+
         private void DisplayWords()
         {
             Status = "Preparing results for displaying";
             var orderedWords = UnknownWordsDictionary.Keys.OrderBy(i => i).ToArray();
             if (ShowFileDetails)
             {
-                for (int i = 0; i < orderedWords.Length; i++)
+                for (var i = 0; i < orderedWords.Length; i++)
                 {
                     orderedWords[i] += "\n    " + string.Join("\n    ", UnknownWordsDictionary[orderedWords[i]]) + "\n";
                 }
             }
 
             Words = string.Join("\n", orderedWords);
+            UnknownWordsStat = Words.Length + " words";
             Status = "Completed";
         }
 

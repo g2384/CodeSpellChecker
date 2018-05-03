@@ -23,6 +23,8 @@
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
@@ -30,18 +32,37 @@
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
             <Label Grid.Row="0" Grid.Column="0"
-                   Content="Source File Directory"/>
+                   Content="File Extensions"/>
             <TextBox Grid.Row="0" Grid.Column="1"
-                     Margin="5,0" Text="{Binding SourceFilePath}"/>
-            <Button Grid.Row="0" 
+                     Margin="5,0" Text="{Binding FileExtensions}"/>
+            <Label Grid.Row="1" Grid.Column="0"
+                   Margin="0,5,0,0"
+                   Content="Exclude Folders"/>
+            <TextBox Grid.Row="1" Grid.Column="1"
+                     Margin="5,5,5,0" Text="{Binding ExcludeFolders}"/>
+            <Label Grid.Row="2" Grid.Column="0"
+                   Margin="0,5,0,0"
+                   Content="Source File Directory"/>
+            <TextBox Grid.Row="2" Grid.Column="1"
+                     Margin="5,5,5,0" Text="{Binding SourceFilePath}"/>
+            <Button Grid.Row="2" 
                     Grid.Column="2" 
+                    Margin="0,5,0,0"
                     Padding="5,2"
                     Content="Start" 
                     Command="{Binding StartCommand}"/>
-            
+            <StackPanel Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="3"
+                        Margin="0,5,0,0"
+                        Orientation="Horizontal">
+                <Button 
+                        Padding="5,2"
+                        Content="Update Dictionaries"
+                        Command="{Binding PrepareDictionaries}"/>
+            </StackPanel>
         </Grid>
         <Grid Grid.Row="1" Margin="0,5,0,0">
             <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
                 <RowDefinition Height="Auto"/>
@@ -54,18 +75,21 @@
                 <Label 
                     Grid.Column="0"
                     Content="Unknown Words:"/>
+                <Label 
+                    Grid.Column="0"
+                    Content="{Binding UnknownWordsStat}"/>
                 <CheckBox Grid.Column="1"
                           HorizontalAlignment="Right"
                     Margin="5,5,0,0"
                     IsChecked="{Binding ShowFileDetails}"
                     Content="Show File &amp; Line Details"/>
             </Grid>
-            
+
             <TextBox Grid.Row="1" VerticalScrollBarVisibility="Auto"
                  IsReadOnly="True"
                  TextWrapping="Wrap"
                  Text="{Binding Words}"/>
-            </Grid>
+        </Grid>
         <Grid Grid.Row="2" Margin="0,5,0,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
