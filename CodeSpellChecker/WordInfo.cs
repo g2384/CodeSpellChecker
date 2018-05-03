@@ -8,6 +8,8 @@ namespace CodeSpellChecker
 
         public string Location { get; set; }
 
+        public string Suggestion { get; set; }
+
         public WordInfo(string word)
         {
             Word = word;
@@ -17,6 +19,7 @@ namespace CodeSpellChecker
         {
             Word = word;
             Location = string.Join("\n", list);
+            Suggestion = list[0].Suggestions;
         }
     }
 }

@@ -28,6 +28,7 @@
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
@@ -44,17 +45,24 @@
             <TextBox Grid.Row="1" Grid.Column="1"
                      Margin="5,5,5,0" Text="{Binding ExcludeFolders}"/>
             <Label Grid.Row="2" Grid.Column="0"
+                   Content="Exclude Lines (Regex)"/>
+            <TextBox Grid.Row="2" Grid.Column="1"
+                     MinLines="4"
+                     MaxLines="4"
+                     VerticalScrollBarVisibility="Auto"
+                     Margin="5,0" Text="{Binding ExcludeLinesRegex}"/>
+            <Label Grid.Row="3" Grid.Column="0"
                    Margin="0,5,0,0"
                    Content="Source File Directory"/>
-            <TextBox Grid.Row="2" Grid.Column="1"
+            <TextBox Grid.Row="3" Grid.Column="1"
                      Margin="5,5,5,0" Text="{Binding SourceFilePath}"/>
-            <Button Grid.Row="2" 
+            <Button Grid.Row="3" 
                     Grid.Column="2" 
                     Margin="0,5,0,0"
                     Padding="5,2"
                     Content="Start" 
                     Command="{Binding StartCommand}"/>
-            <StackPanel Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="3"
+            <StackPanel Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="3"
                         Margin="0,5,0,0"
                         Orientation="Horizontal">
                 <Label Content="If dictionary is modified"></Label>
@@ -127,6 +135,9 @@
                     <DataGridTextColumn Header="Location" 
                                         Width="*" 
                                         Binding="{Binding Location}"/>
+                    <DataGridTextColumn Header="Suggestions" 
+                                        Width="Auto" 
+                                        Binding="{Binding Suggestion}"/>
                     <!--Visibility="{Binding DataContext.ShowFileDetails, Source={StaticResource ProxyElement}, Converter={StaticResource BoolToVis}}"-->
                     <DataGridTemplateColumn Header="Add To Dictionary" Width="Auto">
                         <DataGridTemplateColumn.CellTemplate>

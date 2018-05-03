@@ -24,6 +24,11 @@ namespace CodeSpellChecker
 
         public MainWindowViewModel()
         {
+            LoadSettings();
+        }
+
+        private void LoadSettings()
+        {
             if (File.Exists(SettingFile))
             {
                 var setting = File.ReadAllText(SettingFile);
@@ -39,7 +44,7 @@ namespace CodeSpellChecker
         private RelayCommand _startCommand;
 
         public RelayCommand StartCommand =>
-            _startCommand ?? (_startCommand = new RelayCommand(AnalyseAsync, () => _isStartButtonEnabled && !string.IsNullOrWhiteSpace(SourceFilePath)));
+            _startCommand ?? (_startCommand = new RelayCommand(() => RunAsyncTask(AnalyseAsync), () => _isStartButtonEnabled && !string.IsNullOrWhiteSpace(SourceFilePath)));
 
         private RelayCommand _prepareDictionaries;
 
@@ -80,10 +85,12 @@ namespace CodeSpellChecker
         {
             File.AppendAllText(dictionaryFileName, "\n" + wordInfo.Word);
             WordsTable.Remove(wordInfo);
+            UnknownWordsDictionary.TryRemove(wordInfo.Word, out _);
             Status = wordInfo.Word + " is added to " + dictionaryFileName;
         }
 
         public const string FormattedDictionaryFileName = "~Dictionary{0}.txt";
+        public const string DictionaryFolder = "Dictionary";
 
         private void PrepareDictionariesCommand()
         {
@@ -98,10 +105,16 @@ namespace CodeSpellChecker
             }
             entries = entries.ConvertAll(d => d.Trim().ToLower());
             var groups = entries.GroupBy(i => i.Length);
+            if (!Directory.Exists(DictionaryFolder))
+            {
+                Directory.CreateDirectory(DictionaryFolder);
+            }
             foreach (var g in groups)
             {
-                File.WriteAllLines(string.Format(FormattedDictionaryFileName, g.Key), g.ToArray());
+                File.WriteAllLines(DictionaryFolder + "\\" + string.Format(FormattedDictionaryFileName, g.Key), g.ToArray());
             }
+
+            Status = "Dictionary is updated";
         }
 
         private string _sourceFilePath;
@@ -126,18 +139,26 @@ namespace CodeSpellChecker
             set => Set(ref _words, value);
         }
 
-        private bool _showFileDetails;
+        private bool? _showFileDetails;
 
         public bool ShowFileDetails
         {
-            get => _showFileDetails;
+            get => (_showFileDetails ?? (_showFileDetails = Settings.ShowFileDetails)).Value;
             set
             {
                 if (Set(ref _showFileDetails, value))
                 {
-                    DisplayWords();
+                    RunAsyncTask(DisplayWords);
                 }
             }
+        }
+
+        private string _excludeLinesRegex;
+
+        public string ExcludeLinesRegex
+        {
+            get => _excludeLinesRegex ?? (_excludeLinesRegex = string.Join("\n", Settings.IgnoredContents));
+            set => Set(ref _excludeLinesRegex, value);
         }
 
         private string _status;
@@ -241,36 +262,42 @@ namespace CodeSpellChecker
 
         private int _totalFiles;
 
-        public async void AnalyseAsync()
+        private async void RunAsyncTask(Action action)
         {
-            await Task.Run(() =>
-            {
-                try
-                {
-                    ChangeStartCommandCanExecute(false);
-                    IsProgressVisible = true;
-                    var sp = new Stopwatch();
-                    sp.Start();
-                    Analyse();
-                    sp.Stop();
-                    IsProgressVisible = false;
-                    var timeElapsed = $"Time elapsed: {sp.Elapsed.Hours}h {sp.Elapsed.Minutes}m {sp.Elapsed.Seconds}s {sp.Elapsed.Milliseconds}ms";
-                    Status = $"Completed ({timeElapsed}, Analysed {_totalFiles} files)";
-                }
-                catch (Exception e)
-                {
-                    MessageBox.Show(e.Message, "Error", MessageBoxButton.OK);
-                    Status = "Error occurred";
-                }
-                finally
-                {
-                    ChangeStartCommandCanExecute(true);
-                }
-            });
+            await Task.Run(action);
         }
+
+        private void AnalyseAsync()
+        {
+            try
+            {
+                ChangeStartCommandCanExecute(false);
+                IsProgressVisible = true;
+                var sp = new Stopwatch();
+                sp.Start();
+                Analyse();
+                sp.Stop();
+                IsProgressVisible = false;
+                var timeElapsed = $"Time elapsed: {sp.Elapsed.Hours}h {sp.Elapsed.Minutes}m {sp.Elapsed.Seconds}s {sp.Elapsed.Milliseconds}ms";
+                Status = $"Completed ({timeElapsed}, Analysed {_totalFiles} files)";
+            }
+            catch (Exception e)
+            {
+                MessageBox.Show(e.Message, "Error", MessageBoxButton.OK);
+                Status = "Error occurred";
+            }
+            finally
+            {
+                ChangeStartCommandCanExecute(true);
+            }
+        }
+
+        public Dictionary<int, string[]> LookUpDictionary;
 
         private void Analyse()
         {
+            LoadSettings();
+
             Progress = 0;
             _totalFiles = 0;
             UnknownWordsStat = "";
@@ -281,7 +308,7 @@ namespace CodeSpellChecker
                 return;
             }
 
-            StoreSettings();
+            SaveSettings();
 
             var currentFolder = Path.GetDirectoryName(Assembly.GetEntryAssembly().Location);
             if (string.IsNullOrWhiteSpace(currentFolder))
@@ -304,12 +331,12 @@ namespace CodeSpellChecker
                 return;
             }
 
-            var dictionary = new Dictionary<int, string[]>();
+            LookUpDictionary = new Dictionary<int, string[]>();
             foreach (var d in dictionaries)
             {
                 var length = dictionaryFileNameRegex.Match(d).Groups[1].Value;
                 int lengthNumber = int.Parse(length);
-                dictionary[lengthNumber] = File.ReadAllLines(d).ToArray();
+                LookUpDictionary[lengthNumber] = File.ReadAllLines(d).ToArray();
             }
 
             var path = SourceFilePath;
@@ -324,7 +351,7 @@ namespace CodeSpellChecker
                 allFiles.AddRange(GetAllFiles(path, "*" + ext, info =>
                       Settings.FileExtensions.Any(i => Path.GetExtension(info.Name) == i)
                       && Settings.ExcludeFolders.TrueForAll(
-                          i => info.Directory?.FullName.Replace(path, @"\").Contains(i) == false
+                          i => (info.Directory?.FullName.Replace(path, @"\") + "\\").Contains(i) == false
                       )));
             }
 
@@ -339,7 +366,7 @@ namespace CodeSpellChecker
                 {
                     try
                     {
-                        CheckLine(file, line, dictionary, regexes);
+                        CheckLine(file, line, LookUpDictionary, regexes);
                     }
                     catch (Exception e)
                     {
@@ -389,21 +416,22 @@ namespace CodeSpellChecker
                     var lowerWord = singleWord.ToLower();
                     if (UnknownWordsDictionary.ContainsKey(lowerWord))
                     {
-                        UnknownWordsDictionary[lowerWord].Add(new WordLocation(file, trimmedLine));
+                        UnknownWordsDictionary[lowerWord].Add(new WordLocation(file, trimmedLine, UnknownWordsDictionary[lowerWord][0].Suggestions));
                         continue;
                     }
 
                     if (!dictionary.ContainsKey(lowerWord.Length)
                         || !dictionary[lowerWord.Length].Contains(lowerWord))
                     {
+                        var suggestions = GetSuggestion(lowerWord);
                         UnknownWordsDictionary[lowerWord] = new List<WordLocation>()
-                                    {new WordLocation(file, trimmedLine)};
+                                    {new WordLocation(file, trimmedLine, suggestions)};
                     }
                 }
             }
         }
 
-        private void StoreSettings()
+        private void SaveSettings()
         {
             Settings.SourceFilePath = SourceFilePath;
             Settings.ShowFileDetails = ShowFileDetails;
@@ -418,12 +446,22 @@ namespace CodeSpellChecker
                 Settings.FileExtensions = new Regex(@"[^\*\.\w]+").Split(FileExtensions).Where(i => !string.IsNullOrWhiteSpace(i)).ToList();
             }
 
+            if (!string.IsNullOrWhiteSpace(ExcludeLinesRegex))
+            {
+                Settings.IgnoredContents = ExcludeLinesRegex.Split('\n').ToList();
+            }
+
             File.WriteAllText(SettingFile, JsonConvert.SerializeObject(Settings, Formatting.Indented));
         }
 
         private static List<string> GetFormattedDictionaries(string currentFolder, Regex dictionaryFileNameRegex)
         {
-            var allFilesInCurrentFolder = Directory.GetFiles(currentFolder);
+            var folder = currentFolder + "\\" + DictionaryFolder;
+            if (!Directory.Exists(folder))
+            {
+                return new List<string>();
+            }
+            var allFilesInCurrentFolder = Directory.GetFiles(folder);
             var dictionaries = allFilesInCurrentFolder.Where(i => dictionaryFileNameRegex.Match(i).Success);
             return dictionaries.ToList();
         }
@@ -455,6 +493,51 @@ namespace CodeSpellChecker
             Words = string.Join("\n", orderedWords);
             UnknownWordsStat = orderedWords.Length + " words";
             Status = "Completed";
+        }
+
+        private string GetSuggestion(string word)
+        {
+            var s1 = GetSuggestion(word, word.Length - 1, out int distance);
+            var s2 = GetSuggestion(word, word.Length, out int distance2);
+            var s3 = GetSuggestion(word, word.Length + 1, out int distance3);
+            var dist = Math.Min(distance, Math.Min(distance2, distance3));
+            var suggestions = new List<string>();
+            if (dist == distance)
+            {
+                suggestions.Add(s1);
+            }
+            if (dist == distance2)
+            {
+                suggestions.Add(s2);
+            }
+            if (dist == distance3)
+            {
+                suggestions.Add(s3);
+            }
+            suggestions.RemoveAll(string.IsNullOrWhiteSpace);
+            return string.Join(", ", suggestions);
+        }
+
+        private string GetSuggestion(string word, int length, out int minEditDistance)
+        {
+            var dictionary = LookUpDictionary[length];
+            minEditDistance = Math.Min(3, word.Length / 3);
+            List<string> suggestions = new List<string>();
+            foreach (var p in dictionary)
+            {
+                var distance = LevenshteinDistance.Compute(p, word);
+                if (distance < minEditDistance)
+                {
+                    minEditDistance = distance;
+                    suggestions = new List<string>() { p };
+                }
+                else if (distance == minEditDistance)
+                {
+                    suggestions.Add(p);
+                }
+            }
+
+            return string.Join(", ", suggestions);
         }
 
         private string[] SplitCamelCase(string word)

@@ -24,7 +24,11 @@ namespace CodeSpellChecker
             {
                 @"Guid\(""[0-9a-zA-Z\-]+""\)",
                 @"&[a-zA-Z]+;",
-                @"///   Looks up a localized string similar to.*"
+                @"///   Looks up a localized string similar to.*",
+                @"\b0[xX][0-9a-fA-F]+\b",
+                @"#\b[0-9a-fA-F]+\b",
+                @"[Ll]orem ipsum[\w ,\.]+",
+                @"(isn|doesn|hasn|haven)'t"
             };
 
             FileExtensions = new List<string>()
