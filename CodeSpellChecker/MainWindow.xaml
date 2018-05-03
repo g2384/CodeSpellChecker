@@ -9,6 +9,8 @@
     <Window.Resources>
         <ResourceDictionary>
             <BooleanToVisibilityConverter x:Key="BoolToVis" />
+            <!--<FrameworkElement x:Key="ProxyElement"
+                              DataContext="{Binding}"/> //Bind datagrid column visibility MVVM-->
         </ResourceDictionary>
     </Window.Resources>
 
@@ -18,6 +20,8 @@
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
+        <!--<ContentControl Visibility="Collapsed"
+                        Content="{StaticResource ProxyElement}"/>-->
         <Grid Grid.Row="0">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
@@ -78,17 +82,77 @@
                 <Label 
                     Grid.Column="1"
                     Content="{Binding UnknownWordsStat}"/>
-                <CheckBox Grid.Column="2"
-                          HorizontalAlignment="Right"
-                    Margin="5,5,0,0"
+                <StackPanel Grid.Column="2"
+                            Margin="5,5,0,0"
+                            Orientation="Horizontal"
+                            HorizontalAlignment="Right">
+                    <CheckBox 
                     IsChecked="{Binding ShowFileDetails}"
                     Content="Show File &amp; Line Details"/>
+                    <CheckBox 
+                          HorizontalAlignment="Right"
+                          Margin="5,0,0,0"
+                          IsChecked="{Binding ShowTextBox}"
+                          Content="Show result in TextBox"/>
+                </StackPanel>
             </Grid>
 
             <TextBox Grid.Row="1" VerticalScrollBarVisibility="Auto"
-                 IsReadOnly="True"
-                 TextWrapping="Wrap"
-                 Text="{Binding Words}"/>
+                     IsReadOnly="True"
+                     TextWrapping="Wrap"
+                     Visibility="{Binding ShowTextBox, Converter={StaticResource BoolToVis}}"
+                     Text="{Binding Words}"/>
+            <DataGrid Grid.Row="1" 
+                      VerticalScrollBarVisibility="Auto"
+                      Visibility="{Binding ShowDataGrid, Converter={StaticResource BoolToVis}}"
+                      AutoGenerateColumns="False"
+                      CanUserAddRows="False"
+                      CanUserDeleteRows="False"
+                      CanUserResizeRows="False"
+                      ItemsSource="{Binding WordsTable}">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Word" 
+                                        Width="Auto"
+                                        Binding="{Binding Word}">
+                        <DataGridTextColumn.CellStyle>
+                            <Style TargetType="DataGridCell">
+                                <Style.Setters>
+                                    <Setter Property="TextBlock.TextAlignment" Value="Center" />
+                                    <Setter Property="VerticalAlignment" Value="Stretch"/>
+                                </Style.Setters>
+                            </Style>
+                        </DataGridTextColumn.CellStyle>
+                    </DataGridTextColumn>
+                    <DataGridTextColumn Header="Location" 
+                                        Width="*" 
+                                        Binding="{Binding Location}"/>
+                    <!--Visibility="{Binding DataContext.ShowFileDetails, Source={StaticResource ProxyElement}, Converter={StaticResource BoolToVis}}"-->
+                    <DataGridTemplateColumn Header="Add To Dictionary" Width="Auto">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Center">
+                                    <Button 
+                                        Padding="5,2"
+                                        Margin="5"
+                                        MinWidth="25"
+                                    ToolTip="Add to custom dictionary"
+                                    Content="C"
+                                    Command="{Binding Path=DataContext.AddToCustomDictionaryCommand, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type DataGrid}}}"
+                                    CommandParameter="{Binding SelectedItem, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type DataGrid}}}"/>
+                                    <Button 
+                                        Padding="5,2"
+                                        Margin="0,5,5,5"
+                                        MinWidth="25"
+                                    ToolTip="Add to dictionary"
+                                    Content="S"
+                                    Command="{Binding Path=DataContext.AddToStandardDictionaryCommand, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type DataGrid}}}"
+                                    CommandParameter="{Binding SelectedItem, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type DataGrid}}}"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                </DataGrid.Columns>
+            </DataGrid>
         </Grid>
         <Grid Grid.Row="2" Margin="0,5,0,0">
             <Grid.ColumnDefinitions>

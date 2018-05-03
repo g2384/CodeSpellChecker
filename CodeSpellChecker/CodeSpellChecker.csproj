@@ -79,6 +79,7 @@
     </ApplicationDefinition>
     <Compile Include="MainWindowViewModel.cs" />
     <Compile Include="Settings.cs" />
+    <Compile Include="WordInfo.cs" />
     <Compile Include="WordLocation.cs" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>

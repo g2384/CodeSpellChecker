@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -44,6 +45,33 @@ namespace CodeSpellChecker
 
         public RelayCommand PrepareDictionaries =>
             _prepareDictionaries ?? (_prepareDictionaries = new RelayCommand(PrepareDictionariesCommand));
+
+        private RelayCommand<WordInfo> _addToCustomDictionaryCommand;
+
+        public RelayCommand<WordInfo> AddToCustomDictionaryCommand =>
+            _addToCustomDictionaryCommand ?? (_addToCustomDictionaryCommand = new RelayCommand<WordInfo>(AddToCustomDictionary));
+
+        private RelayCommand<WordInfo> _addToStandardDictionaryCommand;
+
+        public RelayCommand<WordInfo> AddToStandardDictionaryCommand =>
+            _addToStandardDictionaryCommand ?? (_addToStandardDictionaryCommand = new RelayCommand<WordInfo>(AddToStandardDictionary));
+
+        private void AddToStandardDictionary(WordInfo wordInfo)
+        {
+            AddWordToDictionary(wordInfo, DictionaryFile);
+        }
+
+        private void AddToCustomDictionary(WordInfo wordInfo)
+        {
+            AddWordToDictionary(wordInfo, CustomDictionaryFile);
+        }
+
+        private void AddWordToDictionary(WordInfo wordInfo, string dictionaryFileName)
+        {
+            File.AppendAllText(dictionaryFileName, "\n" + wordInfo.Word);
+            WordsTable.Remove(wordInfo);
+            Status = wordInfo.Word + " is added to " + dictionaryFileName;
+        }
 
         public const string FormattedDictionaryFileName = "~Dictionary{0}.txt";
 
@@ -153,12 +181,36 @@ namespace CodeSpellChecker
             set => Set(ref _isProgressVisible, value);
         }
 
+        private bool _showTextBox;
+
+        public bool ShowTextBox
+        {
+            get => _showTextBox;
+            set
+            {
+                if (Set(ref _showTextBox, value))
+                {
+                    RaisePropertyChanged(nameof(ShowDataGrid));
+                }
+            }
+        }
+
+        public bool ShowDataGrid => !ShowTextBox;
+
         private string _unknownWordsStat;
 
         public string UnknownWordsStat
         {
             get => _unknownWordsStat;
             set => Set(ref _unknownWordsStat, value);
+        }
+
+        private ObservableCollection<WordInfo> _wordsTable;
+
+        public ObservableCollection<WordInfo> WordsTable
+        {
+            get => _wordsTable;
+            set => Set(ref _wordsTable, value);
         }
 
         private void ChangeStartCommandCanExecute(bool isStartButtonEnabled)
@@ -369,16 +421,27 @@ namespace CodeSpellChecker
         {
             Status = "Preparing results for displaying";
             var orderedWords = UnknownWordsDictionary.Keys.OrderBy(i => i).ToArray();
+            WordsTable = new ObservableCollection<WordInfo>(); ;
+
             if (ShowFileDetails)
             {
                 for (var i = 0; i < orderedWords.Length; i++)
                 {
-                    orderedWords[i] += "\n    " + string.Join("\n    ", UnknownWordsDictionary[orderedWords[i]]) + "\n";
+                    var word = orderedWords[i];
+                    orderedWords[i] += "\n    " + string.Join("\n    ", UnknownWordsDictionary[word]) + "\n";
+                    WordsTable.Add(new WordInfo(word, UnknownWordsDictionary[word]));
+                }
+            }
+            else
+            {
+                foreach (var word in orderedWords)
+                {
+                    WordsTable.Add(new WordInfo(word));
                 }
             }
 
             Words = string.Join("\n", orderedWords);
-            UnknownWordsStat = Words.Length + " words";
+            UnknownWordsStat = orderedWords.Length + " words";
             Status = "Completed";
         }
 
