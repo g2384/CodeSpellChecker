@@ -50,8 +50,9 @@
             <TextBox Grid.Row="2" Grid.Column="1"
                      MinLines="4"
                      MaxLines="4"
+                     AcceptsReturn="True"
                      VerticalScrollBarVisibility="Auto"
-                     Margin="5,0" Text="{Binding ExcludeLinesRegex}"/>
+                     Margin="5,0" Text="{Binding ExcludeLinesRegex, UpdateSourceTrigger=PropertyChanged}"/>
             <Label Grid.Row="3" Grid.Column="0"
                    Content="Minimum word length"/>
             <TextBox Grid.Row="3" Grid.Column="1"
@@ -75,7 +76,12 @@
                 <Button 
                         Padding="5,2"
                         Content="Update Dictionaries"
-                        Command="{Binding PrepareDictionaries}"/>
+                        Command="{Binding PrepareDictionariesCommand}"/>
+                <Label Content=" |  If dictionary is not sorted"></Label>
+                <Button 
+                    Padding="5,2"
+                    Content="Sort Dictionaries"
+                    Command="{Binding SortDictionariesCommand}"/>
             </StackPanel>
         </Grid>
         <Border Grid.Row="1" Margin="0,10,0,0"

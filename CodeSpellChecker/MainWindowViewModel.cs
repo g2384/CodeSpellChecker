@@ -46,10 +46,36 @@ namespace CodeSpellChecker
         public RelayCommand StartCommand =>
             _startCommand ?? (_startCommand = new RelayCommand(() => RunAsyncTask(AnalyseAsync), () => _isStartButtonEnabled && !string.IsNullOrWhiteSpace(SourceFilePath)));
 
-        private RelayCommand _prepareDictionaries;
+        private RelayCommand _prepareDictionariesCommand;
 
-        public RelayCommand PrepareDictionaries =>
-            _prepareDictionaries ?? (_prepareDictionaries = new RelayCommand(PrepareDictionariesCommand));
+        public RelayCommand PrepareDictionariesCommand =>
+            _prepareDictionariesCommand ?? (_prepareDictionariesCommand = new RelayCommand(PrepareDictionaries));
+
+        private RelayCommand _sortDictionariesCommand;
+
+        public RelayCommand SortDictionariesCommand =>
+            _sortDictionariesCommand ?? (_sortDictionariesCommand = new RelayCommand(SortDictionaries));
+
+        private void SortDictionaries()
+        {
+            SortDictionary(DictionaryFile);
+            SortDictionary(ProgrammingDictionaryFile);
+            SortDictionary(CustomDictionaryFile);
+        }
+
+        private void SortDictionary(string filePath)
+        {
+            var entries = File.ReadAllLines(filePath).ToList();
+            entries.Sort();
+            for (var i = 0; i < entries.Count; i++)
+            {
+                entries[i] = entries[i].ToLower();
+            }
+            var uniqueEntries = entries.Distinct().ToList();
+            uniqueEntries.RemoveAll(string.IsNullOrWhiteSpace);
+            File.WriteAllText(filePath, string.Join("\n", uniqueEntries));
+            Status = "Dictionary is sorted";
+        }
 
         private RelayCommand<WordInfo> _addToCustomDictionaryCommand;
 
@@ -98,7 +124,7 @@ namespace CodeSpellChecker
         public const string FormattedDictionaryFileName = "~Dictionary{0}.txt";
         public const string DictionaryFolder = "Dictionary";
 
-        private void PrepareDictionariesCommand()
+        private void PrepareDictionaries()
         {
             var entries = File.ReadAllLines(DictionaryFile).ToList();
             if (File.Exists(CustomDictionaryFile))
@@ -109,6 +135,9 @@ namespace CodeSpellChecker
             {
                 entries.AddRange(File.ReadAllLines(ProgrammingDictionaryFile));
             }
+
+            entries = entries.Distinct().ToList();
+            entries.RemoveAll(string.IsNullOrWhiteSpace);
             entries = entries.ConvertAll(d => d.Trim().ToLower());
             var groups = entries.GroupBy(i => i.Length);
             if (!Directory.Exists(DictionaryFolder))
@@ -350,7 +379,7 @@ namespace CodeSpellChecker
             var dictionaries = GetFormattedDictionaries(currentFolder, dictionaryFileNameRegex);
             if (!dictionaries.Any())
             {
-                PrepareDictionariesCommand();
+                PrepareDictionaries();
                 dictionaries = GetFormattedDictionaries(currentFolder, dictionaryFileNameRegex);
             }
 
