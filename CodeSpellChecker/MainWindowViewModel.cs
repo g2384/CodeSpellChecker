@@ -243,6 +243,28 @@ namespace CodeSpellChecker
             set => Set(ref _unknownWordsStat, value);
         }
 
+        private string _minimumWordLength;
+
+        public string MinimumWordLength
+        {
+            get => _minimumWordLength ?? (_minimumWordLength = Settings.IgnoreIfLengthLessThan.ToString());
+            set
+            {
+                if (Set(ref _minimumWordLength, value))
+                {
+                    var isInt = int.TryParse(_minimumWordLength, out var v);
+                    if (isInt)
+                    {
+                        Settings.IgnoreIfLengthLessThan = v;
+                    }
+                    else
+                    {
+                        Set(ref _minimumWordLength, Settings.IgnoreIfLengthLessThan.ToString());
+                    }
+                }
+            }
+        }
+
         private ObservableCollection<WordInfo> _wordsTable;
 
         public ObservableCollection<WordInfo> WordsTable
@@ -303,7 +325,7 @@ namespace CodeSpellChecker
 
         private void Analyse()
         {
-            LoadSettings();
+            //LoadSettings();
 
             Progress = 0;
             _totalFiles = 0;
@@ -342,7 +364,7 @@ namespace CodeSpellChecker
             foreach (var d in dictionaries)
             {
                 var length = dictionaryFileNameRegex.Match(d).Groups[1].Value;
-                int lengthNumber = int.Parse(length);
+                var lengthNumber = int.Parse(length);
                 LookUpDictionary[lengthNumber] = File.ReadAllLines(d).ToList();
             }
 
@@ -504,7 +526,7 @@ namespace CodeSpellChecker
 
         private string GetSuggestion(string word)
         {
-            if(word.Length <= 3)
+            if (word.Length <= 3)
             {
                 return null;
             }

@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:CodeSpellChecker"
         mc:Ignorable="d"
-        Title="Code Spell Checker" Height="450" Width="800">
+        Title="Code Spell Checker" Height="650" Width="800">
     <Window.Resources>
         <ResourceDictionary>
             <BooleanToVisibilityConverter x:Key="BoolToVis" />
@@ -24,6 +24,7 @@
                         Content="{StaticResource ProxyElement}"/>-->
         <Grid Grid.Row="0">
             <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
@@ -52,17 +53,22 @@
                      VerticalScrollBarVisibility="Auto"
                      Margin="5,0" Text="{Binding ExcludeLinesRegex}"/>
             <Label Grid.Row="3" Grid.Column="0"
+                   Content="Minimum word length"/>
+            <TextBox Grid.Row="3" Grid.Column="1"
+                     AcceptsReturn="False"
+                     Margin="5,0" Text="{Binding MinimumWordLength, UpdateSourceTrigger=PropertyChanged}"/>
+            <Label Grid.Row="4" Grid.Column="0"
                    Margin="0,5,0,0"
                    Content="Source File Directory"/>
-            <TextBox Grid.Row="3" Grid.Column="1"
+            <TextBox Grid.Row="4" Grid.Column="1"
                      Margin="5,5,5,0" Text="{Binding SourceFilePath}"/>
-            <Button Grid.Row="3" 
+            <Button Grid.Row="4" 
                     Grid.Column="2" 
                     Margin="0,5,0,0"
                     Padding="5,2"
                     Content="Start" 
                     Command="{Binding StartCommand}"/>
-            <StackPanel Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="3"
+            <StackPanel Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="3"
                         Margin="0,5,0,0"
                         Orientation="Horizontal">
                 <Label Content="If dictionary is modified"></Label>
@@ -72,7 +78,10 @@
                         Command="{Binding PrepareDictionaries}"/>
             </StackPanel>
         </Grid>
-        <Grid Grid.Row="1" Margin="0,5,0,0">
+        <Border Grid.Row="1" Margin="0,10,0,0"
+                BorderBrush="#888"
+                BorderThickness="0,1,0,0">
+        <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
@@ -174,6 +183,7 @@
                 </DataGrid.Columns>
             </DataGrid>
         </Grid>
+        </Border>
         <Grid Grid.Row="2" Margin="0,5,0,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
