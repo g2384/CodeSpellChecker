@@ -497,16 +497,18 @@ namespace CodeSpellChecker
 
         private void DisplayWords()
         {
+            if (UnknownWordsDictionary == null)
+            {
+                return;
+            }
             Status = "Preparing results for displaying";
             var orderedWords = UnknownWordsDictionary.Keys.OrderBy(i => i).ToArray();
             var words = new List<WordInfo>();
 
             if (ShowFileDetails)
             {
-                for (var i = 0; i < orderedWords.Length; i++)
+                foreach (var word in orderedWords)
                 {
-                    var word = orderedWords[i];
-                    orderedWords[i] += "\n    " + string.Join("\n    ", UnknownWordsDictionary[word]) + "\n";
                     words.Add(new WordInfo(word, UnknownWordsDictionary[word]));
                 }
             }
@@ -519,7 +521,20 @@ namespace CodeSpellChecker
             }
 
             WordsTable = new ObservableCollection<WordInfo>(words);
-            Words = string.Join("\n", orderedWords);
+            if (ShowTextBox)
+            {
+                var w = new string[orderedWords.Length];
+                for (var i = 0; i < words.Count; i++)
+                {
+                    var word = words[i];
+                    var suggestion = string.IsNullOrWhiteSpace(word.Suggestions) ? "" : "\n    [Do you mean: " + word.Suggestions.Replace("\n", ", ") + "]";
+                    w[i] = word.Word + suggestion
+                            + "\n    " + string.Join("\n    ", word.Location) + "\n";
+                }
+
+                Words = string.Join("\n", w);
+            }
+
             UnknownWordsStat = GetUnknownWordsStat();
             Status = "Completed";
         }
