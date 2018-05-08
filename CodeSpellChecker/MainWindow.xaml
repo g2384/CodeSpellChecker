@@ -4,6 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:CodeSpellChecker"
+        xmlns:controls="http://metro.mahapps.com/winfx/xaml/controls"
         mc:Ignorable="d"
         Title="Code Spell Checker" Height="650" Width="800">
     <Window.Resources>
@@ -46,18 +47,22 @@
             <TextBox Grid.Row="1" Grid.Column="1"
                      Margin="5,5,5,0" Text="{Binding ExcludeFolders}"/>
             <Label Grid.Row="2" Grid.Column="0"
+                   Margin="0,5,0,0"
                    Content="Exclude Lines (Regex)"/>
             <TextBox Grid.Row="2" Grid.Column="1"
                      MinLines="4"
                      MaxLines="4"
                      AcceptsReturn="True"
                      VerticalScrollBarVisibility="Auto"
-                     Margin="5,0" Text="{Binding ExcludeLinesRegex, UpdateSourceTrigger=PropertyChanged}"/>
+                     Margin="5,5,5,0"
+                     Text="{Binding ExcludeLinesRegex, UpdateSourceTrigger=PropertyChanged}"/>
             <Label Grid.Row="3" Grid.Column="0"
+                   Margin="0,5,0,0"
                    Content="Minimum word length"/>
             <TextBox Grid.Row="3" Grid.Column="1"
                      AcceptsReturn="False"
-                     Margin="5,0" Text="{Binding MinimumWordLength, UpdateSourceTrigger=PropertyChanged}"/>
+                     Margin="5,5,5,0"
+                     Text="{Binding MinimumWordLength, UpdateSourceTrigger=PropertyChanged}"/>
             <Label Grid.Row="4" Grid.Column="0"
                    Margin="0,5,0,0"
                    Content="Source File Directory"/>
@@ -68,6 +73,7 @@
                     Margin="0,5,0,0"
                     Padding="5,2"
                     Content="Start" 
+                    controls:ControlsHelper.ContentCharacterCasing="Normal"
                     Command="{Binding StartCommand}"/>
             <StackPanel Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="3"
                         Margin="0,5,0,0"
@@ -76,11 +82,13 @@
                 <Button 
                         Padding="5,2"
                         Content="Update Dictionaries"
+                        controls:ControlsHelper.ContentCharacterCasing="Normal"
                         Command="{Binding PrepareDictionariesCommand}"/>
                 <Label Content=" |  If dictionary is not sorted"></Label>
                 <Button 
                     Padding="5,2"
                     Content="Sort Dictionaries"
+                    controls:ControlsHelper.ContentCharacterCasing="Normal"
                     Command="{Binding SortDictionariesCommand}"/>
             </StackPanel>
         </Grid>
@@ -151,7 +159,7 @@
                                         Width="*" 
                                         Binding="{Binding Location}"/>
                     <DataGridTextColumn Header="Suggestions" 
-                                        Width="Auto" 
+                                        Width="Auto"
                                         Binding="{Binding Suggestions}"/>
                     <!--Visibility="{Binding DataContext.ShowFileDetails, Source={StaticResource ProxyElement}, Converter={StaticResource BoolToVis}}"-->
                     <DataGridTemplateColumn Header="Add To Dictionary" Width="Auto">

@@ -869,6 +869,7 @@ acquirable
 acquire
 acquired
 acquirement
+acquirer
 acquirers
 acquires
 acquiring

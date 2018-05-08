@@ -28,7 +28,8 @@ namespace CodeSpellChecker
                 @"\b0[xX][0-9a-fA-F]+\b",
                 @"#\b[0-9a-fA-F]+\b",
                 @"[Ll]orem ipsum[\w ,\.]+",
-                @"(isn|doesn|hasn|haven)'t"
+                @"\b(isn|doesn|hasn|haven)'t\b",
+                @"[\\/][a-zA-Z]+", // escaped key words, e.g. \n, /str
             };
 
             FileExtensions = new List<string>()

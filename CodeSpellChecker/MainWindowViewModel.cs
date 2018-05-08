@@ -262,7 +262,7 @@ namespace CodeSpellChecker
             }
         }
 
-        public bool ShowDataGrid => !ShowTextBox;
+        public bool ShowDataGrid => !ShowTextBox && WordsTable != null && WordsTable.Count > 0;
 
         private string _unknownWordsStat;
 
@@ -481,7 +481,7 @@ namespace CodeSpellChecker
                     if (!dictionary.ContainsKey(lowerWord.Length)
                         || dictionary[lowerWord.Length].BinarySearch(lowerWord) < 0)
                     {
-                        var suggestions = GetSuggestion(lowerWord);
+                        var suggestions = GetSuggestions(lowerWord);
                         UnknownWordsDictionary[lowerWord] = new List<WordLocation>()
                                     {new WordLocation(file, trimmedLine, suggestions)};
                     }
@@ -550,6 +550,8 @@ namespace CodeSpellChecker
             }
 
             WordsTable = new ObservableCollection<WordInfo>(words);
+            RaisePropertyChanged(nameof(ShowDataGrid));
+
             if (ShowTextBox)
             {
                 var w = new string[orderedWords.Length];
@@ -558,17 +560,17 @@ namespace CodeSpellChecker
                     var word = words[i];
                     var suggestion = string.IsNullOrWhiteSpace(word.Suggestions) ? "" : "\n    [Do you mean: " + word.Suggestions.Replace("\n", ", ") + "]";
                     w[i] = word.Word + suggestion
-                            + "\n    " + string.Join("\n    ", word.Location) + "\n";
+                            + "\n    " + string.Join("\n    ", word.Locations) + "\n";
                 }
 
                 Words = string.Join("\n", w);
             }
 
             UnknownWordsStat = GetUnknownWordsStat();
-            Status = "Completed";
+            Status = words.Count == 0 ? "No spelling errors." : "Completed";
         }
 
-        private string GetSuggestion(string word)
+        private string GetSuggestions(string word)
         {
             if (word.Length <= 3)
             {
@@ -580,6 +582,11 @@ namespace CodeSpellChecker
             GetSuggestion(word, word.Length - 1, ref minEditDistance, ref suggestions);
             GetSuggestion(word, word.Length, ref minEditDistance, ref suggestions);
             GetSuggestion(word, word.Length + 1, ref minEditDistance, ref suggestions);
+            if (suggestions.Count == 0)
+            {
+                GetSuggestion(word, word.Length - 2, ref minEditDistance, ref suggestions);
+                GetSuggestion(word, word.Length + 2, ref minEditDistance, ref suggestions);
+            }
             return string.Join("\n", suggestions);
         }
 

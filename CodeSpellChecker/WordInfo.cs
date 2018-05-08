@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace CodeSpellChecker
@@ -5,6 +6,8 @@ namespace CodeSpellChecker
     public class WordInfo
     {
         public string Word { get; set; }
+
+        public List<WordLocation> Locations { get; set; }
 
         public string Location { get; set; }
 
@@ -19,7 +22,8 @@ namespace CodeSpellChecker
         public WordInfo(string word, List<WordLocation> list)
         {
             Word = word;
-            Location = string.Join("\n", list);
+            Locations = list;
+            Location = string.Join(Environment.NewLine, list);
             Suggestions = list[0].Suggestions;
         }
     }
