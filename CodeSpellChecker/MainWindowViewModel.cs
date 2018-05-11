@@ -234,7 +234,7 @@ namespace CodeSpellChecker
         public const string ProgrammingDictionaryFile = "Dictionary_Programming.txt";
 
         public const string DictionaryFile = "Dictionary.txt";
-
+        public const string Indentation = "    ";
         public ConcurrentDictionary<string, List<WordLocation>> UnknownWordsDictionary;
 
         private bool _isStartButtonEnabled = true;
@@ -351,6 +351,7 @@ namespace CodeSpellChecker
         }
 
         public Dictionary<int, List<string>> LookUpDictionary;
+        public ConcurrentDictionary<string, string> CachedLookUpDictionary;
 
         private void Analyse()
         {
@@ -390,6 +391,7 @@ namespace CodeSpellChecker
             }
 
             LookUpDictionary = new Dictionary<int, List<string>>();
+            CachedLookUpDictionary = new ConcurrentDictionary<string, string>();
             foreach (var d in dictionaries)
             {
                 var length = dictionaryFileNameRegex.Match(d).Groups[1].Value;
@@ -424,11 +426,11 @@ namespace CodeSpellChecker
                 {
                     try
                     {
-                        CheckLine(file, line, LookUpDictionary, regexes);
+                        CheckLine(file, line, LookUpDictionary, CachedLookUpDictionary, regexes);
                     }
                     catch (Exception e)
                     {
-                        MessageBox.Show(e.Message, "Error", MessageBoxButton.OK);
+                        MessageBox.Show(e.Message + Environment.NewLine + e.StackTrace, "Error", MessageBoxButton.OK);
                     }
                 });
 
@@ -437,10 +439,13 @@ namespace CodeSpellChecker
                 Progress = (double)processedFiles * 100 / _totalFiles;
             });
 
-            DisplayWords();
+            lock (CachedLookUpDictionary)
+            {
+                DisplayWords();
+            }
         }
 
-        private void CheckLine(string file, string line, Dictionary<int, List<string>> dictionary, List<Regex> regexes)
+        private void CheckLine(string file, string line, Dictionary<int, List<string>> dictionary, ConcurrentDictionary<string, string> cachedDictionary, List<Regex> regexes)
         {
             var trimmedLine = line.Trim();
             var onlyWords = trimmedLine.Replace("_", " ");
@@ -449,10 +454,10 @@ namespace CodeSpellChecker
                 .OfType<Match>()
                 .Select(m => m.Value)
                 .ToArray();
-            CheckWord(file, dictionary, trimmedLine, words);
+            CheckWord(file, dictionary, cachedDictionary, trimmedLine, words);
         }
 
-        private void CheckWord(string file, Dictionary<int, List<string>> dictionary, string trimmedLine, string[] words)
+        private void CheckWord(string file, Dictionary<int, List<string>> dictionary, ConcurrentDictionary<string, string> cachedDictionary, string line, string[] words)
         {
             foreach (var word in words)
             {
@@ -474,17 +479,34 @@ namespace CodeSpellChecker
                     var lowerWord = singleWord.ToLower();
                     if (UnknownWordsDictionary.ContainsKey(lowerWord))
                     {
-                        UnknownWordsDictionary[lowerWord].Add(new WordLocation(file, trimmedLine, UnknownWordsDictionary[lowerWord][0].Suggestions));
+                        if (UnknownWordsDictionary[lowerWord]
+                                .FirstOrDefault(i => string.Equals(i.Line, line, StringComparison.Ordinal)
+                                                     && string.Equals(i.FilePath, file, StringComparison.Ordinal)) == null)
+                        {
+                            UnknownWordsDictionary[lowerWord].Add(new WordLocation(file, line));
+                        }
+
                         continue;
+                    }
+
+                    lock (cachedDictionary)
+                    {
+                        if (cachedDictionary.ContainsKey(lowerWord))
+                        {
+                            continue;
+                        }
                     }
 
                     if (!dictionary.ContainsKey(lowerWord.Length)
                         || dictionary[lowerWord.Length].BinarySearch(lowerWord) < 0)
                     {
-                        var suggestions = GetSuggestions(lowerWord);
+
                         UnknownWordsDictionary[lowerWord] = new List<WordLocation>()
-                                    {new WordLocation(file, trimmedLine, suggestions)};
+                                    {new WordLocation(file, line)};
+                        continue;
                     }
+
+                    cachedDictionary[lowerWord] = lowerWord;
                 }
             }
         }
@@ -538,14 +560,16 @@ namespace CodeSpellChecker
             {
                 foreach (var word in orderedWords)
                 {
-                    words.Add(new WordInfo(word, UnknownWordsDictionary[word]));
+                    var suggestions = GetSuggestions(word);
+                    words.Add(new WordInfo(word, UnknownWordsDictionary[word], suggestions));
                 }
             }
             else
             {
                 foreach (var word in orderedWords)
                 {
-                    words.Add(new WordInfo(word, UnknownWordsDictionary[word][0].Suggestions));
+                    var suggestions = GetSuggestions(word);
+                    words.Add(new WordInfo(word, suggestions));
                 }
             }
 
@@ -558,12 +582,12 @@ namespace CodeSpellChecker
                 for (var i = 0; i < words.Count; i++)
                 {
                     var word = words[i];
-                    var suggestion = string.IsNullOrWhiteSpace(word.Suggestions) ? "" : "\n    [Do you mean: " + word.Suggestions.Replace("\n", ", ") + "]";
+                    var suggestion = string.IsNullOrWhiteSpace(word.Suggestions) ? "" : Environment.NewLine + Indentation + "[Suggestion(s): " + word.Suggestions.Replace(Environment.NewLine, ", ") + "]";
                     w[i] = word.Word + suggestion
-                            + "\n    " + string.Join("\n    ", word.Locations) + "\n";
+                            + Environment.NewLine + Indentation + word.Location.Replace(Environment.NewLine, Environment.NewLine + Indentation) + Environment.NewLine;
                 }
 
-                Words = string.Join("\n", w);
+                Words = string.Join(Environment.NewLine, w);
             }
 
             UnknownWordsStat = GetUnknownWordsStat();
@@ -579,23 +603,34 @@ namespace CodeSpellChecker
 
             var minEditDistance = Math.Min(3, word.Length / 3);
             var suggestions = new List<string>();
-            GetSuggestion(word, word.Length - 1, ref minEditDistance, ref suggestions);
-            GetSuggestion(word, word.Length, ref minEditDistance, ref suggestions);
-            GetSuggestion(word, word.Length + 1, ref minEditDistance, ref suggestions);
-            if (suggestions.Count == 0)
+
+            GetSuggestion(word, CachedLookUpDictionary.Keys, ref minEditDistance, ref suggestions);
+
+            if (suggestions.Count != 0)
             {
-                GetSuggestion(word, word.Length - 2, ref minEditDistance, ref suggestions);
-                GetSuggestion(word, word.Length + 2, ref minEditDistance, ref suggestions);
+                return string.Join(Environment.NewLine, suggestions);
             }
-            return string.Join("\n", suggestions);
+
+            GetSuggestion(word, LookUpDictionary[word.Length - 1], ref minEditDistance, ref suggestions);
+            GetSuggestion(word, LookUpDictionary[word.Length], ref minEditDistance, ref suggestions);
+            GetSuggestion(word, LookUpDictionary[word.Length + 1], ref minEditDistance, ref suggestions);
+
+            if (suggestions.Count != 0)
+            {
+                return string.Join(Environment.NewLine, suggestions);
+            }
+
+            GetSuggestion(word, LookUpDictionary[word.Length - 2], ref minEditDistance, ref suggestions);
+            GetSuggestion(word, LookUpDictionary[word.Length + 2], ref minEditDistance, ref suggestions);
+
+            return string.Join(Environment.NewLine, suggestions);
         }
 
-        private void GetSuggestion(string word, int length, ref int minEditDistance, ref List<string> suggestions)
+        private void GetSuggestion(string word, IEnumerable<string> dictionary, ref int minEditDistance, ref List<string> suggestions)
         {
-            var dictionary = LookUpDictionary[length];
             foreach (var p in dictionary)
             {
-                var distance = LevenshteinDistance.Compute(p, word);
+                var distance = DamerauLevenshteinDistance.Compute(p, word, minEditDistance);
                 if (distance < minEditDistance)
                 {
                     minEditDistance = distance;

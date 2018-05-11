@@ -135,6 +135,8 @@
                      Visibility="{Binding ShowTextBox, Converter={StaticResource BoolToVis}}"
                      Text="{Binding Words}"/>
             <DataGrid Grid.Row="1" 
+                      BorderThickness="1,1,1,1"
+                      BorderBrush="#888"
                       VerticalScrollBarVisibility="Auto"
                       Visibility="{Binding ShowDataGrid, Converter={StaticResource BoolToVis}}"
                       AutoGenerateColumns="False"
@@ -160,20 +162,31 @@
                                         Binding="{Binding Location}"/>
                     <DataGridTextColumn Header="Suggestions" 
                                         Width="Auto"
-                                        Binding="{Binding Suggestions}"/>
-                    <!--Visibility="{Binding DataContext.ShowFileDetails, Source={StaticResource ProxyElement}, Converter={StaticResource BoolToVis}}"-->
+                                        Binding="{Binding Suggestions}">
+                        <DataGridTextColumn.CellStyle>
+                            <Style TargetType="DataGridCell">
+                                <Style.Setters>
+                                    <Setter Property="TextBlock.TextAlignment" Value="Center" />
+                                    <Setter Property="VerticalAlignment" Value="Top"/>
+                                </Style.Setters>
+                            </Style>
+                        </DataGridTextColumn.CellStyle>
+                    </DataGridTextColumn>
                     <DataGridTemplateColumn Header="Add To Dictionary" Width="Auto">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Center">
+                                <StackPanel 
+                                    Orientation="Horizontal" 
+                                    VerticalAlignment="Top" 
+                                    HorizontalAlignment="Center">
                                     <Button 
                                         Padding="5,2"
                                         Margin="5"
                                         MinWidth="25"
-                                    ToolTip="Add to custom dictionary"
-                                    Content="C"
-                                    Command="{Binding Path=DataContext.AddToCustomDictionaryCommand, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type DataGrid}}}"
-                                    CommandParameter="{Binding SelectedItem, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type DataGrid}}}"/>
+                                        ToolTip="Add to custom dictionary"
+                                        Content="C"
+                                        Command="{Binding Path=DataContext.AddToCustomDictionaryCommand, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type DataGrid}}}"
+                                        CommandParameter="{Binding SelectedItem, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type DataGrid}}}"/>
                                     <Button 
                                         Padding="5,2"
                                         Margin="0,5,5,5"
