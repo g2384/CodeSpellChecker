@@ -611,19 +611,28 @@ namespace CodeSpellChecker
                 return string.Join(Environment.NewLine, suggestions);
             }
 
-            GetSuggestion(word, LookUpDictionary[word.Length - 1], ref minEditDistance, ref suggestions);
-            GetSuggestion(word, LookUpDictionary[word.Length], ref minEditDistance, ref suggestions);
-            GetSuggestion(word, LookUpDictionary[word.Length + 1], ref minEditDistance, ref suggestions);
+            GetSuggestion(word, -1, ref minEditDistance, ref suggestions);
+            GetSuggestion(word, 0, ref minEditDistance, ref suggestions);
+            GetSuggestion(word, 1, ref minEditDistance, ref suggestions);
 
             if (suggestions.Count != 0)
             {
                 return string.Join(Environment.NewLine, suggestions);
             }
 
-            GetSuggestion(word, LookUpDictionary[word.Length - 2], ref minEditDistance, ref suggestions);
-            GetSuggestion(word, LookUpDictionary[word.Length + 2], ref minEditDistance, ref suggestions);
+            GetSuggestion(word, -2, ref minEditDistance, ref suggestions);
+            GetSuggestion(word, 2, ref minEditDistance, ref suggestions);
 
             return string.Join(Environment.NewLine, suggestions);
+        }
+
+        private void GetSuggestion(string word, int deltaLength, ref int minEditDistance, ref List<string> suggestions)
+        {
+            var possibleWordLength = word.Length + deltaLength;
+            if (LookUpDictionary.ContainsKey(possibleWordLength)) 
+            {
+                GetSuggestion(word, LookUpDictionary[possibleWordLength], ref minEditDistance, ref suggestions);
+            }
         }
 
         private void GetSuggestion(string word, IEnumerable<string> dictionary, ref int minEditDistance, ref List<string> suggestions)
