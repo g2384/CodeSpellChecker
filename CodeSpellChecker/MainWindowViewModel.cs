@@ -408,7 +408,8 @@ namespace CodeSpellChecker
             var allFiles = new List<string>();
             foreach (var ext in Settings.FileExtensions)
             {
-                allFiles.AddRange(GetAllFiles(path, "*" + ext, info =>
+                var extension = ext.StartsWith("*") ? ext : "*" + ext;
+                allFiles.AddRange(GetAllFiles(path, extension, info =>
                       Settings.FileExtensions.Any(i => Path.GetExtension(info.Name) == i)
                       && Settings.ExcludeFolders.TrueForAll(
                           i => (info.Directory?.FullName.Replace(path, @"\") + "\\").Contains(i) == false
@@ -448,8 +449,8 @@ namespace CodeSpellChecker
         private void CheckLine(string file, string line, Dictionary<int, List<string>> dictionary, ConcurrentDictionary<string, string> cachedDictionary, List<Regex> regexes)
         {
             var trimmedLine = line.Trim();
+            regexes.ForEach(i => trimmedLine = i.Replace(trimmedLine, ""));
             var onlyWords = trimmedLine.Replace("_", " ");
-            regexes.ForEach(i => onlyWords = i.Replace(onlyWords, ""));
             var words = Regex.Matches(onlyWords, @"(\w+)")
                 .OfType<Match>()
                 .Select(m => m.Value)

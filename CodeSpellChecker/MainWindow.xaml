@@ -6,7 +6,8 @@
         xmlns:local="clr-namespace:CodeSpellChecker"
         xmlns:controls="http://metro.mahapps.com/winfx/xaml/controls"
         mc:Ignorable="d"
-        Title="Code Spell Checker" Height="650" Width="800">
+        Title="Code Spell Checker" Height="650" Width="800"
+        d:DataContext="{d:DesignInstance Type={x:Type local:MainWindowViewModel}, IsDesignTimeCreatable=False}">
     <Window.Resources>
         <ResourceDictionary>
             <BooleanToVisibilityConverter x:Key="BoolToVis" />
