@@ -422,6 +422,7 @@ namespace CodeSpellChecker
             var processedFiles = 0;
             Parallel.ForEach(allFiles, file =>
             {
+                CheckLine(file, file.Replace(SourceFilePath, ""), LookUpDictionary, CachedLookUpDictionary, regexes);
                 var lines = File.ReadAllLines(file);
                 Parallel.ForEach(lines, line =>
                 {
@@ -469,46 +470,51 @@ namespace CodeSpellChecker
                     continue;
                 }
 
-                var singleWords = SplitCamelCase(englishWord);
-                foreach (var singleWord in singleWords)
+                CheckCamelCase(file, dictionary, cachedDictionary, line, englishWord);
+            }
+        }
+
+        private void CheckCamelCase(string file, Dictionary<int, List<string>> dictionary, ConcurrentDictionary<string, string> cachedDictionary, string line, string camelCaseWord)
+        {
+            var singleWords = SplitCamelCase(camelCaseWord);
+            foreach (var singleWord in singleWords)
+            {
+                if (singleWord.Length < Settings.IgnoreIfLengthLessThan)
                 {
-                    if (singleWord.Length < Settings.IgnoreIfLengthLessThan)
-                    {
-                        continue;
-                    }
-
-                    var lowerWord = singleWord.ToLower();
-                    if (UnknownWordsDictionary.ContainsKey(lowerWord))
-                    {
-                        if (UnknownWordsDictionary[lowerWord]
-                                .FirstOrDefault(i => string.Equals(i.Line, line, StringComparison.Ordinal)
-                                                     && string.Equals(i.FilePath, file, StringComparison.Ordinal)) == null)
-                        {
-                            UnknownWordsDictionary[lowerWord].Add(new WordLocation(file, line));
-                        }
-
-                        continue;
-                    }
-
-                    lock (cachedDictionary)
-                    {
-                        if (cachedDictionary.ContainsKey(lowerWord))
-                        {
-                            continue;
-                        }
-                    }
-
-                    if (!dictionary.ContainsKey(lowerWord.Length)
-                        || dictionary[lowerWord.Length].BinarySearch(lowerWord) < 0)
-                    {
-
-                        UnknownWordsDictionary[lowerWord] = new List<WordLocation>()
-                                    {new WordLocation(file, line)};
-                        continue;
-                    }
-
-                    cachedDictionary[lowerWord] = lowerWord;
+                    continue;
                 }
+
+                var lowerWord = singleWord.ToLower();
+                if (UnknownWordsDictionary.ContainsKey(lowerWord))
+                {
+                    if (UnknownWordsDictionary[lowerWord]
+                            .FirstOrDefault(i => string.Equals(i.Line, line, StringComparison.Ordinal)
+                                                 && string.Equals(i.FilePath, file, StringComparison.Ordinal)) == null)
+                    {
+                        UnknownWordsDictionary[lowerWord].Add(new WordLocation(file, line));
+                    }
+
+                    continue;
+                }
+
+                lock (cachedDictionary)
+                {
+                    if (cachedDictionary.ContainsKey(lowerWord))
+                    {
+                        continue;
+                    }
+                }
+
+                if (!dictionary.ContainsKey(lowerWord.Length)
+                    || dictionary[lowerWord.Length].BinarySearch(lowerWord) < 0)
+                {
+
+                    UnknownWordsDictionary[lowerWord] = new List<WordLocation>()
+                                    {new WordLocation(file, line)};
+                    continue;
+                }
+
+                cachedDictionary[lowerWord] = lowerWord;
             }
         }
 
