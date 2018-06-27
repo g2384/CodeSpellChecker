@@ -44,18 +44,28 @@ namespace CodeSpellChecker
                 }
                 else
                 {
-                    files[line.FilePath] = new List<string>() { line.Line };
+                    files[line.FilePath] = new List<string> { line.Line };
                 }
             }
 
-            var result = "";
+            var results = new List<string>();
             foreach (var key in files.Keys)
             {
-                result += key + Environment.NewLine;
-                result += "    " + string.Join(Environment.NewLine + "    ", files[key]) + Environment.NewLine;
+                results.Add(key);
+                if (files[key].Count > 1)
+                {
+                    for (var i = 0; i < files[key].Count; i++)
+                    {
+                        results.Add("    [" + i + 1 + "] " + files[key][i]);
+                    }
+                }
+                else
+                {
+                    results.Add("    " + files[key]);
+                }
             }
 
-            return result.TrimEnd();
+            return string.Join(Environment.NewLine, results);
         }
     }
 }

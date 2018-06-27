@@ -235,7 +235,7 @@ namespace CodeSpellChecker
 
         public const string DictionaryFile = "Dictionary.txt";
         public const string Indentation = "    ";
-        public ConcurrentDictionary<string, List<WordLocation>> UnknownWordsDictionary;
+        public ConcurrentDictionary<string, HashSet<WordLocation>> UnknownWordsDictionary;
 
         private bool _isStartButtonEnabled = true;
 
@@ -318,7 +318,7 @@ namespace CodeSpellChecker
             return app?.Dispatcher;
         }
 
-        private int _totalFiles;
+        private int _totalFilesCount;
 
         private async void RunAsyncTask(Action action)
         {
@@ -337,7 +337,7 @@ namespace CodeSpellChecker
                 sp.Stop();
                 IsProgressVisible = false;
                 var timeElapsed = $"Time elapsed: {sp.Elapsed.Hours}h {sp.Elapsed.Minutes}m {sp.Elapsed.Seconds}s {sp.Elapsed.Milliseconds}ms";
-                Status = $"Completed ({timeElapsed}, Analysed {_totalFiles} files)";
+                Status = $"Completed ({timeElapsed}, Analysed {_totalFilesCount} files)";
             }
             catch (Exception e)
             {
@@ -358,7 +358,7 @@ namespace CodeSpellChecker
             //LoadSettings();
 
             Progress = 0;
-            _totalFiles = 0;
+            _totalFilesCount = 0;
             UnknownWordsStat = "";
             Status = "Starting...";
             if (!Directory.Exists(SourceFilePath))
@@ -416,9 +416,9 @@ namespace CodeSpellChecker
                       )));
             }
 
-            UnknownWordsDictionary = new ConcurrentDictionary<string, List<WordLocation>>();
+            UnknownWordsDictionary = new ConcurrentDictionary<string, HashSet<WordLocation>>();
             var regexes = Settings.IgnoredContents.Select(i => new Regex(i)).ToList();
-            _totalFiles = allFiles.Count;
+            _totalFilesCount = allFiles.Count;
             var processedFiles = 0;
             Parallel.ForEach(allFiles, file =>
             {
@@ -437,8 +437,8 @@ namespace CodeSpellChecker
                 });
 
                 processedFiles++;
-                Status = processedFiles + "/" + _totalFiles;
-                Progress = (double)processedFiles * 100 / _totalFiles;
+                Status = processedFiles + "/" + _totalFilesCount;
+                Progress = (double)processedFiles * 100 / _totalFilesCount;
             });
 
             lock (CachedLookUpDictionary)
@@ -451,8 +451,7 @@ namespace CodeSpellChecker
         {
             var trimmedLine = line.Trim();
             regexes.ForEach(i => trimmedLine = i.Replace(trimmedLine, ""));
-            var onlyWords = trimmedLine.Replace("_", " ");
-            var words = Regex.Matches(onlyWords, @"(\w+)")
+            var words = Regex.Matches(trimmedLine, @"([A-Za-z]+)")
                 .OfType<Match>()
                 .Select(m => m.Value)
                 .ToArray();
@@ -487,13 +486,7 @@ namespace CodeSpellChecker
                 var lowerWord = singleWord.ToLower();
                 if (UnknownWordsDictionary.ContainsKey(lowerWord))
                 {
-                    if (UnknownWordsDictionary[lowerWord]
-                            .FirstOrDefault(i => string.Equals(i.Line, line, StringComparison.Ordinal)
-                                                 && string.Equals(i.FilePath, file, StringComparison.Ordinal)) == null)
-                    {
-                        UnknownWordsDictionary[lowerWord].Add(new WordLocation(file, line));
-                    }
-
+                    UnknownWordsDictionary[lowerWord].Add(new WordLocation(file, line));
                     continue;
                 }
 
@@ -509,8 +502,7 @@ namespace CodeSpellChecker
                     || dictionary[lowerWord.Length].BinarySearch(lowerWord) < 0)
                 {
 
-                    UnknownWordsDictionary[lowerWord] = new List<WordLocation>()
-                                    {new WordLocation(file, line)};
+                    UnknownWordsDictionary[lowerWord] = new HashSet<WordLocation> { new WordLocation(file, line) };
                     continue;
                 }
 
@@ -568,7 +560,7 @@ namespace CodeSpellChecker
                 foreach (var word in orderedWords)
                 {
                     var suggestions = GetSuggestions(word);
-                    words.Add(new WordInfo(word, UnknownWordsDictionary[word], suggestions));
+                    words.Add(new WordInfo(word, UnknownWordsDictionary[word].ToList(), suggestions));
                 }
             }
             else
@@ -636,7 +628,7 @@ namespace CodeSpellChecker
         private void GetSuggestion(string word, int deltaLength, ref int minEditDistance, ref List<string> suggestions)
         {
             var possibleWordLength = word.Length + deltaLength;
-            if (LookUpDictionary.ContainsKey(possibleWordLength)) 
+            if (LookUpDictionary.ContainsKey(possibleWordLength))
             {
                 GetSuggestion(word, LookUpDictionary[possibleWordLength], ref minEditDistance, ref suggestions);
             }
@@ -650,7 +642,7 @@ namespace CodeSpellChecker
                 if (distance < minEditDistance)
                 {
                     minEditDistance = distance;
-                    suggestions = new List<string>() { p };
+                    suggestions = new List<string> { p };
                 }
                 else if (distance == minEditDistance)
                 {

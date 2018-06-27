@@ -20,7 +20,7 @@ namespace CodeSpellChecker
         {
             IgnoreIfLengthLessThan = 3;
 
-            IgnoredContents = new List<string>()
+            IgnoredContents = new List<string>
             {
                 @"Guid\(""[0-9a-zA-Z\-]+""\)",
                 @"&[a-zA-Z]+;",
@@ -32,12 +32,12 @@ namespace CodeSpellChecker
                 @"[\\/][a-zA-Z]+", // escaped key words, e.g. \n, /str
             };
 
-            FileExtensions = new List<string>()
+            FileExtensions = new List<string>
             {
                 ".cs"
             };
 
-            ExcludeFolders = new List<string>()
+            ExcludeFolders = new List<string>
             {
                 @"\obj\", @"\bin\"
             };
