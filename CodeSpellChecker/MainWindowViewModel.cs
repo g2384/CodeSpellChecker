@@ -192,7 +192,7 @@ namespace CodeSpellChecker
 
         public string ExcludeLinesRegex
         {
-            get => _excludeLinesRegex ?? (_excludeLinesRegex = string.Join("\n", Settings.IgnoredContents));
+            get => _excludeLinesRegex ?? (_excludeLinesRegex = string.Join(Environment.NewLine, Settings.IgnoredContents));
             set => Set(ref _excludeLinesRegex, value);
         }
 
@@ -422,13 +422,14 @@ namespace CodeSpellChecker
             var processedFiles = 0;
             Parallel.ForEach(allFiles, file =>
             {
-                CheckLine(file, file.Replace(SourceFilePath, ""), LookUpDictionary, CachedLookUpDictionary, regexes);
+                var shortFilePath = file.Replace(Settings.SourceFilePath, "");
+                CheckLine(shortFilePath, shortFilePath, LookUpDictionary, CachedLookUpDictionary, regexes);
                 var lines = File.ReadAllLines(file);
                 Parallel.ForEach(lines, line =>
                 {
                     try
                     {
-                        CheckLine(file, line, LookUpDictionary, CachedLookUpDictionary, regexes);
+                        CheckLine(shortFilePath, line, LookUpDictionary, CachedLookUpDictionary, regexes);
                     }
                     catch (Exception e)
                     {
@@ -527,7 +528,7 @@ namespace CodeSpellChecker
 
             if (!string.IsNullOrWhiteSpace(ExcludeLinesRegex))
             {
-                Settings.IgnoredContents = ExcludeLinesRegex.Split('\n').ToList();
+                Settings.IgnoredContents = ExcludeLinesRegex.Split(new []{Environment.NewLine}, StringSplitOptions.None).ToList();
             }
 
             File.WriteAllText(SettingFile, JsonConvert.SerializeObject(Settings, Formatting.Indented));

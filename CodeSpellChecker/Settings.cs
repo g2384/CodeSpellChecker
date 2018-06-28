@@ -23,6 +23,7 @@ namespace CodeSpellChecker
             IgnoredContents = new List<string>
             {
                 @"Guid\(""[0-9a-zA-Z\-]+""\)",
+                @"""{[0-9a-zA-Z\-]+}""",
                 @"&[a-zA-Z]+;",
                 @"///   Looks up a localized string similar to.*",
                 @"\b0[xX][0-9a-fA-F]+\b",

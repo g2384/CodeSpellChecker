@@ -56,13 +56,20 @@ namespace CodeSpellChecker
                 {
                     for (var i = 0; i < files[key].Count; i++)
                     {
-                        results.Add("    [" + i + 1 + "] " + files[key][i]);
+                        results.Add("    [" + (i + 1) + "] " + files[key][i]);
                     }
                 }
                 else
                 {
-                    results.Add("    " + files[key]);
+                    results.Add("    " + files[key][0]);
                 }
+
+                results.Add(string.Empty);
+            }
+
+            if (results.Count > 0)
+            {
+                results.RemoveAt(results.Count - 1);
             }
 
             return string.Join(Environment.NewLine, results);

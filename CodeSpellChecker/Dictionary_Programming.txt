@@ -58,6 +58,7 @@ endregion
 enum
 enumerator
 enums
+equatable
 errorkeys
 exe
 expander
@@ -72,6 +73,7 @@ http
 hwnd
 hyperlinks
 ieee
+initialisers
 int
 interop
 ioc
@@ -98,6 +100,7 @@ obj
 param
 params
 pixels
+plugin
 png
 pos
 pragma
@@ -108,6 +111,8 @@ readonly
 ref
 reg
 regex
+regsvr
+resx
 rethrows
 rgb
 schemas
@@ -123,7 +128,9 @@ src
 sta
 stackoverflow
 std
+str
 struct
+submenu
 substring
 sync
 synchronizer
@@ -135,6 +142,7 @@ tcp
 tcpip
 telerik
 tex
+textbox
 timeout
 timespan
 todo

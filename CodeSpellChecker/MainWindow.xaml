@@ -79,7 +79,7 @@
             <StackPanel Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="3"
                         Margin="0,5,0,0"
                         Orientation="Horizontal">
-                <Label Content="If dictionary is modified"></Label>
+                <Label Content="If dictionary has been modified"></Label>
                 <Button 
                         Padding="5,2"
                         Content="Update Dictionaries"
