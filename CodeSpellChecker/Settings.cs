@@ -16,6 +16,8 @@ namespace CodeSpellChecker
 
         public List<string> IgnoredContents { get; set; }
 
+        public bool CanSortDictionary { get; set; }
+
         public void Init()
         {
             IgnoreIfLengthLessThan = 3;

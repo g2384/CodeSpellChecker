@@ -46,18 +46,20 @@ namespace CodeSpellChecker
         public RelayCommand StartCommand =>
             _startCommand ?? (_startCommand = new RelayCommand(() => RunAsyncTask(AnalyseAsync), () => _isStartButtonEnabled && !string.IsNullOrWhiteSpace(SourceFilePath)));
 
-        private RelayCommand _prepareDictionariesCommand;
+        private bool? _canSortDictionary;
 
-        public RelayCommand PrepareDictionariesCommand =>
-            _prepareDictionariesCommand ?? (_prepareDictionariesCommand = new RelayCommand(PrepareDictionaries));
-
-        private RelayCommand _sortDictionariesCommand;
-
-        public RelayCommand SortDictionariesCommand =>
-            _sortDictionariesCommand ?? (_sortDictionariesCommand = new RelayCommand(SortDictionaries));
+        public bool CanSortDictionary
+        {
+            get => (_canSortDictionary ?? (_canSortDictionary = Settings.CanSortDictionary)).Value;
+            set => Set(ref _canSortDictionary, value);
+        }
 
         private void SortDictionaries()
         {
+            if (!CanSortDictionary)
+            {
+                return;
+            }
             SortDictionary(DictionaryFile);
             SortDictionary(ProgrammingDictionaryFile);
             SortDictionary(CustomDictionaryFile);
@@ -130,6 +132,7 @@ namespace CodeSpellChecker
 
         private void PrepareDictionaries()
         {
+            SortDictionaries();
             var entries = File.ReadAllLines(DictionaryFile).ToList();
             if (File.Exists(CustomDictionaryFile))
             {
@@ -397,6 +400,15 @@ namespace CodeSpellChecker
 
             LookUpDictionary = new Dictionary<int, List<string>>();
             CachedLookUpDictionary = new ConcurrentDictionary<string, string>();
+            var sortedDictionaryModifiedTime = File.GetLastWriteTime(dictionaries[0]);
+            var dictionaryFileInfo = File.GetLastWriteTime(DictionaryFile);
+            var programmingDictModifiedTime = File.GetLastWriteTime(ProgrammingDictionaryFile);
+            var customDictionaryModifiedTime = File.GetLastWriteTime(CustomDictionaryFile);
+            if (sortedDictionaryModifiedTime < new[] {dictionaryFileInfo, programmingDictModifiedTime, customDictionaryModifiedTime}.Max())
+            {
+                PrepareDictionaries();
+                dictionaries = GetFormattedDictionaries(currentFolder, dictionaryFileNameRegex);
+            }
             foreach (var d in dictionaries)
             {
                 var length = dictionaryFileNameRegex.Match(d).Groups[1].Value;
@@ -545,6 +557,7 @@ namespace CodeSpellChecker
         {
             Settings.SourceFilePath = SourceFilePath;
             Settings.ShowFileDetails = ShowFileDetails;
+            Settings.CanSortDictionary = CanSortDictionary;
             if (!string.IsNullOrWhiteSpace(ExcludeFolders))
             {
                 var extensions = ExcludeFolders.Substring(1, ExcludeFolders.Length - 2);
