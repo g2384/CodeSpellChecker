@@ -65,6 +65,10 @@ namespace CodeSpellChecker
 
         private void SortDictionary(string filePath)
         {
+            if (!File.Exists(filePath))
+            {
+                return;
+            }
             var entries = File.ReadAllLines(filePath).ToList();
             entries.Sort();
             for (var i = 0; i < entries.Count; i++)
@@ -236,6 +240,7 @@ namespace CodeSpellChecker
         public const string DictionaryFile = "Dictionary.txt";
         public const string Indentation = "    ";
         public ConcurrentDictionary<string, HashSet<WordLocation>> UnknownWordsDictionary;
+        public ConcurrentDictionary<string, HashSet<string>> Collocations;
 
         private bool _isStartButtonEnabled = true;
 
@@ -417,6 +422,7 @@ namespace CodeSpellChecker
             }
 
             UnknownWordsDictionary = new ConcurrentDictionary<string, HashSet<WordLocation>>();
+            Collocations = new ConcurrentDictionary<string, HashSet<string>>();
             var regexes = Settings.IgnoredContents.Select(i => new Regex(i)).ToList();
             _totalFilesCount = allFiles.Count;
             var processedFiles = 0;
@@ -476,38 +482,62 @@ namespace CodeSpellChecker
 
         private void CheckCamelCase(string file, Dictionary<int, List<string>> dictionary, ConcurrentDictionary<string, string> cachedDictionary, string line, string camelCaseWord)
         {
-            var singleWords = SplitCamelCase(camelCaseWord);
-            foreach (var singleWord in singleWords)
+            var singleWords = SplitCamelCase(camelCaseWord).ToList();
+            var singleWordsLowerCase = singleWords.ConvertAll(d => d.ToLower());
+            var allCombos = new List<string[]>();
+            for (var i = 0; i < singleWords.Count; i++)
+            {
+                for (var j = 2; j <= 3 && i + j <= singleWords.Count; j++)
+                {
+                    allCombos.Add(singleWords.GetRange(i, j).ToArray());
+                }
+            }
+
+            foreach (var singleWord in singleWordsLowerCase)
             {
                 if (singleWord.Length < Settings.IgnoreIfLengthLessThan)
                 {
                     continue;
                 }
 
-                var lowerWord = singleWord.ToLower();
-                if (UnknownWordsDictionary.ContainsKey(lowerWord))
+                if (UnknownWordsDictionary.ContainsKey(singleWord))
                 {
-                    UnknownWordsDictionary[lowerWord].Add(new WordLocation(file, line));
+                    UnknownWordsDictionary[singleWord].Add(new WordLocation(file, line));
                     continue;
                 }
 
                 lock (cachedDictionary)
                 {
-                    if (cachedDictionary.ContainsKey(lowerWord))
+                    if (cachedDictionary.ContainsKey(singleWord))
                     {
+                        AddToCollocation(allCombos, singleWord);
                         continue;
                     }
                 }
 
-                if (!dictionary.ContainsKey(lowerWord.Length)
-                    || dictionary[lowerWord.Length].BinarySearch(lowerWord) < 0)
+                if (!dictionary.ContainsKey(singleWord.Length)
+                    || dictionary[singleWord.Length].BinarySearch(singleWord) < 0)
                 {
 
-                    UnknownWordsDictionary[lowerWord] = new HashSet<WordLocation> { new WordLocation(file, line) };
+                    UnknownWordsDictionary[singleWord] = new HashSet<WordLocation> { new WordLocation(file, line) };
                     continue;
                 }
 
-                cachedDictionary[lowerWord] = lowerWord;
+                cachedDictionary[singleWord] = singleWord;
+                AddToCollocation(allCombos, singleWord);
+            }
+        }
+
+        private void AddToCollocation(List<string[]> allCombos, string singleWord)
+        {
+            if (allCombos.Count <= 0) return;
+            if (!Collocations.ContainsKey(singleWord))
+            {
+                Collocations[singleWord] = new HashSet<string>();
+            }
+            foreach (var c in allCombos)
+            {
+                Collocations[singleWord].Add(string.Join(string.Empty, c));
             }
         }
 
@@ -528,7 +558,7 @@ namespace CodeSpellChecker
 
             if (!string.IsNullOrWhiteSpace(ExcludeLinesRegex))
             {
-                Settings.IgnoredContents = ExcludeLinesRegex.Split(new []{Environment.NewLine}, StringSplitOptions.None).ToList();
+                Settings.IgnoredContents = ExcludeLinesRegex.Split(new[] { Environment.NewLine }, StringSplitOptions.None).ToList();
             }
 
             File.WriteAllText(SettingFile, JsonConvert.SerializeObject(Settings, Formatting.Indented));
@@ -602,31 +632,38 @@ namespace CodeSpellChecker
             }
 
             var minEditDistance = Math.Min(3, word.Length / 3);
-            var suggestions = new List<string>();
+            var suggestions = new HashSet<string>();
 
             GetSuggestion(word, CachedLookUpDictionary.Keys, ref minEditDistance, ref suggestions);
 
-            if (suggestions.Count != 0)
+            if (suggestions.Count == 0)
             {
-                return string.Join(Environment.NewLine, suggestions);
+                GetSuggestion(word, -1, ref minEditDistance, ref suggestions);
+                GetSuggestion(word, 0, ref minEditDistance, ref suggestions);
+                GetSuggestion(word, 1, ref minEditDistance, ref suggestions);
+
+                if (suggestions.Count == 0)
+                {
+                    GetSuggestion(word, -2, ref minEditDistance, ref suggestions);
+                    GetSuggestion(word, 2, ref minEditDistance, ref suggestions);
+                }
             }
 
-            GetSuggestion(word, -1, ref minEditDistance, ref suggestions);
-            GetSuggestion(word, 0, ref minEditDistance, ref suggestions);
-            GetSuggestion(word, 1, ref minEditDistance, ref suggestions);
-
-            if (suggestions.Count != 0)
+            foreach (var key in Collocations.Keys)
             {
-                return string.Join(Environment.NewLine, suggestions);
+                if (!word.Contains(key)) continue;
+                foreach (var w in Collocations[key])
+                {
+                    if (word == w.ToLower())
+                    {
+                        suggestions.Add(w);
+                    }
+                }
             }
-
-            GetSuggestion(word, -2, ref minEditDistance, ref suggestions);
-            GetSuggestion(word, 2, ref minEditDistance, ref suggestions);
-
             return string.Join(Environment.NewLine, suggestions);
         }
 
-        private void GetSuggestion(string word, int deltaLength, ref int minEditDistance, ref List<string> suggestions)
+        private void GetSuggestion(string word, int deltaLength, ref int minEditDistance, ref HashSet<string> suggestions)
         {
             var possibleWordLength = word.Length + deltaLength;
             if (LookUpDictionary.ContainsKey(possibleWordLength))
@@ -635,7 +672,7 @@ namespace CodeSpellChecker
             }
         }
 
-        private void GetSuggestion(string word, IEnumerable<string> dictionary, ref int minEditDistance, ref List<string> suggestions)
+        private void GetSuggestion(string word, IEnumerable<string> dictionary, ref int minEditDistance, ref HashSet<string> suggestions)
         {
             foreach (var p in dictionary)
             {
@@ -643,7 +680,7 @@ namespace CodeSpellChecker
                 if (distance < minEditDistance)
                 {
                     minEditDistance = distance;
-                    suggestions = new List<string> { p };
+                    suggestions = new HashSet<string> { p };
                 }
                 else if (distance == minEditDistance)
                 {
