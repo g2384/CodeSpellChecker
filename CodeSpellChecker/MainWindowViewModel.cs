@@ -496,12 +496,12 @@ namespace CodeSpellChecker
         {
             var singleWords = SplitCamelCase(camelCaseWord).ToList();
             var singleWordsLowerCase = singleWords.ConvertAll(d => d.ToLower());
-            var allCombos = new List<string[]>();
+            var allCombos = new List<string>();
             for (var i = 0; i < singleWords.Count; i++)
             {
                 for (var j = 2; j <= 3 && i + j <= singleWords.Count; j++)
                 {
-                    allCombos.Add(singleWords.GetRange(i, j).ToArray());
+                    allCombos.Add(string.Join(string.Empty, singleWords.GetRange(i, j)));
                 }
             }
 
@@ -540,7 +540,7 @@ namespace CodeSpellChecker
             }
         }
 
-        private void AddToCollocation(List<string[]> allCombos, string singleWord)
+        private void AddToCollocation(List<string> allCombos, string singleWord)
         {
             if (allCombos.Count <= 0) return;
             if (!Collocations.ContainsKey(singleWord))
@@ -549,7 +549,7 @@ namespace CodeSpellChecker
             }
             foreach (var c in allCombos)
             {
-                Collocations[singleWord].Add(string.Join(string.Empty, c));
+                Collocations[singleWord].Add(c);
             }
         }
 
@@ -649,6 +649,18 @@ namespace CodeSpellChecker
 
             GetSuggestion(word, CachedLookUpDictionary.Keys, ref minEditDistance, ref suggestions);
 
+            foreach (var key in Collocations.Keys)
+            {
+                if (!word.Contains(key)) continue;
+                foreach (var w in Collocations[key])
+                {
+                    if (string.Equals(word, w, StringComparison.OrdinalIgnoreCase))
+                    {
+                        suggestions.Add(w);
+                    }
+                }
+            }
+
             if (suggestions.Count == 0)
             {
                 GetSuggestion(word, -1, ref minEditDistance, ref suggestions);
@@ -662,17 +674,6 @@ namespace CodeSpellChecker
                 }
             }
 
-            foreach (var key in Collocations.Keys)
-            {
-                if (!word.Contains(key)) continue;
-                foreach (var w in Collocations[key])
-                {
-                    if (word == w.ToLower())
-                    {
-                        suggestions.Add(w);
-                    }
-                }
-            }
             return string.Join(Environment.NewLine, suggestions);
         }
 
