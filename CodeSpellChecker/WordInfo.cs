@@ -1,10 +1,10 @@
+using Microsoft.Toolkit.Mvvm.ComponentModel;
 using System;
 using System.Collections.Generic;
-using GalaSoft.MvvmLight;
 
 namespace CodeSpellChecker
 {
-    public class WordInfo : ViewModelBase
+    public class WordInfo : ObservableObject
     {
         public string Word { get; set; }
 
@@ -15,7 +15,7 @@ namespace CodeSpellChecker
         public string Location
         {
             get => _location ?? (_location = WordLocationsToString(Locations));
-            set => Set(ref _location, value);
+            set => SetProperty(ref _location, value);
         }
 
         public string Suggestions { get; set; }
@@ -36,15 +36,18 @@ namespace CodeSpellChecker
         public string WordLocationsToString(List<WordLocation> list)
         {
             var files = new Dictionary<string, List<string>>();
-            foreach (var line in list)
+            if (list != null)
             {
-                if (files.ContainsKey(line.FilePath))
+                foreach (var line in list)
                 {
-                    files[line.FilePath].Add(line.Line);
-                }
-                else
-                {
-                    files[line.FilePath] = new List<string> { line.Line };
+                    if (files.ContainsKey(line.FilePath))
+                    {
+                        files[line.FilePath].Add(line.Line);
+                    }
+                    else
+                    {
+                        files[line.FilePath] = new List<string> { line.Line };
+                    }
                 }
             }
 

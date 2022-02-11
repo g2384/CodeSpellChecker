@@ -1,10 +1,9 @@
-<Window x:Class="CodeSpellChecker.MainWindow"
+﻿<Window x:Class="CodeSpellChecker.MainWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:local="clr-namespace:CodeSpellChecker"
-    xmlns:controls="http://metro.mahapps.com/winfx/xaml/controls"
     Title="Code Spell Checker"
     Width="800"
     Height="650"
@@ -100,7 +99,6 @@
                 Grid.Column="2"
                 Margin="0,5,0,0"
                 Padding="5,2"
-                controls:ControlsHelper.ContentCharacterCasing="Normal"
                 Content="Start"
                 Command="{Binding StartCommand}" />
             <CheckBox
@@ -191,7 +189,6 @@
                                 <Style TargetType="DataGridCell">
                                     <Style.Setters>
                                         <Setter Property="TextBlock.TextAlignment" Value="Center" />
-                                        <Setter Property="VerticalAlignment" Value="Top" />
                                     </Style.Setters>
                                 </Style>
                             </DataGridTextColumn.CellStyle>

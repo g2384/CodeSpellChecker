@@ -1,3 +1,6 @@
+using Microsoft.Toolkit.Mvvm.ComponentModel;
+using Microsoft.Toolkit.Mvvm.Input;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -10,13 +13,10 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
-using GalaSoft.MvvmLight;
-using GalaSoft.MvvmLight.Command;
-using Newtonsoft.Json;
 
 namespace CodeSpellChecker
 {
-    public class MainWindowViewModel : ViewModelBase
+    public class MainWindowViewModel : ObservableObject
     {
         public const string SettingFile = "settings.json";
 
@@ -51,7 +51,7 @@ namespace CodeSpellChecker
         public bool CanSortDictionary
         {
             get => (_canSortDictionary ?? (_canSortDictionary = Settings.CanSortDictionary)).Value;
-            set => Set(ref _canSortDictionary, value);
+            set => SetProperty(ref _canSortDictionary, value);
         }
 
         private void SortDictionaries()
@@ -171,9 +171,9 @@ namespace CodeSpellChecker
             get => _sourceFilePath ?? (_sourceFilePath = Settings.SourceFilePath);
             set
             {
-                if (Set(ref _sourceFilePath, value))
+                if (SetProperty(ref _sourceFilePath, value))
                 {
-                    StartCommand.RaiseCanExecuteChanged();
+                    StartCommand.NotifyCanExecuteChanged();
                 }
             }
         }
@@ -183,7 +183,7 @@ namespace CodeSpellChecker
         public string Words
         {
             get => _words;
-            set => Set(ref _words, value);
+            set => SetProperty(ref _words, value);
         }
 
         private bool? _showFileDetails;
@@ -193,7 +193,7 @@ namespace CodeSpellChecker
             get => (_showFileDetails ?? (_showFileDetails = Settings.ShowFileDetails)).Value;
             set
             {
-                if (Set(ref _showFileDetails, value))
+                if (SetProperty(ref _showFileDetails, value))
                 {
                     RunAsyncTask(DisplayWords);
                 }
@@ -205,7 +205,7 @@ namespace CodeSpellChecker
         public string ExcludeLinesRegex
         {
             get => _excludeLinesRegex ?? (_excludeLinesRegex = string.Join(Environment.NewLine, Settings.IgnoredContents));
-            set => Set(ref _excludeLinesRegex, value);
+            set => SetProperty(ref _excludeLinesRegex, value);
         }
 
         private string _status;
@@ -213,7 +213,7 @@ namespace CodeSpellChecker
         public string Status
         {
             get => _status;
-            set => Set(ref _status, value);
+            set => SetProperty(ref _status, value);
         }
 
         private double _progress;
@@ -221,7 +221,7 @@ namespace CodeSpellChecker
         public double Progress
         {
             get => _progress;
-            set => Set(ref _progress, value);
+            set => SetProperty(ref _progress, value);
         }
 
         private string _fileExtensions;
@@ -229,7 +229,7 @@ namespace CodeSpellChecker
         public string FileExtensions
         {
             get => _fileExtensions ?? (_fileExtensions = string.Join("; ", Settings.FileExtensions));
-            set => Set(ref _fileExtensions, value);
+            set => SetProperty(ref _fileExtensions, value);
         }
 
         private string _excludeFolders;
@@ -237,7 +237,7 @@ namespace CodeSpellChecker
         public string ExcludeFolders
         {
             get => _excludeFolders ?? (_excludeFolders = "\"" + string.Join("\"; \"", Settings.ExcludeFolders) + "\"");
-            set => Set(ref _excludeFolders, value);
+            set => SetProperty(ref _excludeFolders, value);
         }
 
 
@@ -257,7 +257,7 @@ namespace CodeSpellChecker
         public bool IsProgressVisible
         {
             get => _isProgressVisible;
-            set => Set(ref _isProgressVisible, value);
+            set => SetProperty(ref _isProgressVisible, value);
         }
 
         private bool _showTextBox;
@@ -267,10 +267,10 @@ namespace CodeSpellChecker
             get => _showTextBox;
             set
             {
-                if (Set(ref _showTextBox, value))
+                if (SetProperty(ref _showTextBox, value))
                 {
                     RunAsyncTask(DisplayWords);
-                    RaisePropertyChanged(nameof(ShowDataGrid));
+                    OnPropertyChanged(nameof(ShowDataGrid));
                 }
             }
         }
@@ -282,7 +282,7 @@ namespace CodeSpellChecker
         public string UnknownWordsStat
         {
             get => _unknownWordsStat;
-            set => Set(ref _unknownWordsStat, value);
+            set => SetProperty(ref _unknownWordsStat, value);
         }
 
         private string _minimumWordLength;
@@ -292,7 +292,7 @@ namespace CodeSpellChecker
             get => _minimumWordLength ?? (_minimumWordLength = Settings.IgnoreIfLengthLessThan.ToString());
             set
             {
-                if (Set(ref _minimumWordLength, value))
+                if (SetProperty(ref _minimumWordLength, value))
                 {
                     var isInt = int.TryParse(_minimumWordLength, out var v);
                     if (isInt)
@@ -301,7 +301,7 @@ namespace CodeSpellChecker
                     }
                     else
                     {
-                        Set(ref _minimumWordLength, Settings.IgnoreIfLengthLessThan.ToString());
+                        SetProperty(ref _minimumWordLength, Settings.IgnoreIfLengthLessThan.ToString());
                     }
                 }
             }
@@ -312,7 +312,7 @@ namespace CodeSpellChecker
         public ObservableCollection<WordInfo> WordsTable
         {
             get => _wordsTable;
-            set => Set(ref _wordsTable, value);
+            set => SetProperty(ref _wordsTable, value);
         }
 
         private void ChangeStartCommandCanExecute(bool isStartButtonEnabled)
@@ -321,7 +321,7 @@ namespace CodeSpellChecker
             dispatcher?.Invoke(() =>
             {
                 _isStartButtonEnabled = isStartButtonEnabled;
-                StartCommand.RaiseCanExecuteChanged();
+                StartCommand.NotifyCanExecuteChanged();
             }, DispatcherPriority.Send);
         }
 
@@ -640,7 +640,7 @@ namespace CodeSpellChecker
             }
 
             WordsTable = new ObservableCollection<WordInfo>(words);
-            RaisePropertyChanged(nameof(ShowDataGrid));
+            OnPropertyChanged(nameof(ShowDataGrid));
 
             if (ShowTextBox)
             {

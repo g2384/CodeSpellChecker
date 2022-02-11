@@ -1,9 +1,9 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.27428.2043
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29009.5
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeSpellChecker", "CodeSpellChecker\CodeSpellChecker.csproj", "{01EFB59D-52C1-4DE2-9CB2-0972CC250170}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeSpellChecker", "CodeSpellChecker\CodeSpellChecker.csproj", "{C35C8B4E-D4D8-4603-B5FA-5A5B703FCC0E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -11,10 +11,10 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{01EFB59D-52C1-4DE2-9CB2-0972CC250170}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{01EFB59D-52C1-4DE2-9CB2-0972CC250170}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{01EFB59D-52C1-4DE2-9CB2-0972CC250170}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{01EFB59D-52C1-4DE2-9CB2-0972CC250170}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C35C8B4E-D4D8-4603-B5FA-5A5B703FCC0E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C35C8B4E-D4D8-4603-B5FA-5A5B703FCC0E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C35C8B4E-D4D8-4603-B5FA-5A5B703FCC0E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C35C8B4E-D4D8-4603-B5FA-5A5B703FCC0E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
